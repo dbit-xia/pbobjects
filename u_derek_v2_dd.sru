@@ -127,7 +127,6 @@ public function integer uf_setitem (datastore dd, readonly long al_row, readonly
 public function string uf_dwcreatetab (powerobject ldw, string ls_tablename, transaction ltrans)
 public function integer execddl (string as_sql, transaction at_trans)
 public function any uf_getitem (ref datawindow dd, long al_row, string as_columname, string ls_coltype, dwbuffer ldwbuffer, boolean loriginal)
-public function string tovalue (any la_value, string ls_op)
 public function any uf_getitem (ref datastore dd, long al_row, string as_columname, string ls_coltype, dwbuffer ldwbuffer, boolean loriginal)
 public function string uf_update (ref datastore ldw_1, string ls_param, transaction ltrans_1)
 public function string uf_update (ref datawindow ldw_1, string ls_param, transaction ltrans_1)
@@ -137,6 +136,8 @@ public function integer uf_setcell (datawindow dd, long row, string column)
 public function string valuescase (string fieldname, string fieldtype, string values, string showtype)
 public function string uf_sql_explain (character ls_sql[], ref string ls_newsql, ref string ls_aliasname[], ref string ls_expression[])
 public function string uf_sql_explain (character ls_sql[], string ls_param)
+public function string tovalue (readonly any la_value, readonly string ls_op)
+public function string uf_execute(string as_sql, any a_parm[],transaction ltrans)
 end prototypes
 
 public function string getquery (ref powerobject dd, string as_sql);//根据sql语句创建一个grid风格数据窗口,返回错误原因,''为成功
@@ -4551,36 +4552,6 @@ e:
 return la_value
 end function
 
-public function string tovalue (any la_value, string ls_op);string ls_value
-if ls_op='where' then 
-	if isnull(la_value) then return ' is NULL'
-	choose case classname(la_value)
-		case 'string'
-			ls_value=la_value
-			replaceex(ls_value,'~'','~'~'')
-			return "='"+ls_value+"'"
-		case 'datetime'
-			return "='"+string(la_value,'YYYY-MM-DD hh:mm:ss.fff')+"'"
-		case else
-			return '='+string(la_value)
-	end choose
-else
-	if isnull(la_value) then return 'NULL'
-	choose case classname(la_value)
-		case 'string'
-			ls_value=la_value
-			replaceex(ls_value,'~'','~'~'')
-			return "'"+ls_value+"'"
-		case 'datetime'
-			return "'"+string(la_value,'YYYY-MM-DD hh:mm:ss.fff')+"'"
-		case else
-			return string(la_value)
-	end choose
-end if
-
-
-end function
-
 public function any uf_getitem (ref datastore dd, long al_row, string as_columname, string ls_coltype, dwbuffer ldwbuffer, boolean loriginal);//设置any多种类型的值
 any la_value
 datawindow ldw
@@ -4673,6 +4644,8 @@ for i=1 to li_columncount
 	end if
 next
 
+
+
 string ls_sql
 long l_row,l_subcount,l_sqlcount,l_rowcount
 long l_rowsinserted,l_rowsupdated,l_rowsdeleted
@@ -4682,6 +4655,16 @@ string ls_insertsyntax,ls_valuesyntax,ls_setsyntax
 string ls_dbvalue
 dwbuffer ldw_buffer[]={filter!,primary!}
 int li_bufferindex
+any la_parm[];any la_empty
+long l_parmcount
+//ids_temp.create('release 12;table(column=(type=char(32766) updatewhereclause=no name=a dbname="a" ))');
+
+i=1
+ls_insertsyntax="insert into "+ls_updatetable+"("+ls_dbname[li_update[i]]
+for i=2 to li_updatecount
+	ls_insertsyntax+=","+ls_dbname[li_update[i]]
+next
+ls_insertsyntax+=')'
 
 if li_insert=1 then //采用全insert的模式
 	l_rowcount=ldw_1.rowcount()
@@ -4691,27 +4674,27 @@ if li_insert=1 then //采用全insert的模式
 	l_subcount=0
 	l_rowsinserted=0
 	
-	i=1
-	ls_insertsyntax="insert into "+ls_updatetable+"("+ls_dbname[li_update[i]]
-	for i=2 to li_updatecount
-		ls_insertsyntax+=","+ls_dbname[li_update[i]]
-	next
-	ls_insertsyntax+=')'
-	
 	for l_row=1 to l_rowcount
 		i=1
 		//ls_insertsyntax="insert into "+ls_updatetable+"("+ls_dbname[li_update[i]]
 		//ls_valuesyntax="values("+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],primary!,false),'')
-		ls_valuesyntax="select "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],primary!,false),'')
+		ls_valuesyntax="select ?"
+		//ls_valuesyntax="("+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],primary!,false),'')
+		//ls_valuesyntax="(?"
+		l_parmcount++;la_parm[l_parmcount]=ldw_1.object.data[l_row,i]
 		for i=2 to li_updatecount
 			//ls_insertsyntax+=","+ls_dbname[li_update[i]]
-			ls_valuesyntax+=","+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],primary!,false),'')
+			//ls_valuesyntax+=","+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],primary!,false),'')
+			ls_valuesyntax+=',?'
+			l_parmcount++;la_parm[l_parmcount]=ldw_1.object.data[l_row,i]
 		next
 		//ls_sql+=ls_insertsyntax+ls_valuesyntax+") ~r~n"
+		//ls_valuesyntax+=')'
 		if l_subcount=0 then 
-			ls_sql=ls_insertsyntax
+			ls_sql=ls_insertsyntax //+' values'
 		else
 			ls_sql+='~r~n union all '
+			//ls_sql+=','
 		end if
 		ls_sql+='~r~n '+ls_valuesyntax
 		
@@ -4720,8 +4703,13 @@ if li_insert=1 then //采用全insert的模式
 		
 		if l_subcount=l_batch then 
 			l_sqlcount+=l_subcount
-			execute immediate :ls_sql using ltrans_1;
-			if ltrans_1.sqlcode=-1 then goto e
+			ls_ret=uf_execute(ls_sql,la_parm[],ltrans_1)
+			if ls_ret<>'' then 
+				ls_errtext='uf_execute:'+ls_ret
+				goto e
+			end if
+//			execute immediate :ls_sql using ltrans_1;
+//			if ltrans_1.sqlcode=-1 then goto e
 			if li_check=1 then 
 				if ltrans_1.sqlnrows<>l_subcount then 
 					ls_errtext='Has nochanges '
@@ -4730,6 +4718,8 @@ if li_insert=1 then //采用全insert的模式
 			end if
 			l_subcount=0
 			ls_sql=''
+			la_parm[]={''}
+			l_parmcount=0
 		end if
 	next
 	goto p //转到最后一批
@@ -4753,17 +4743,26 @@ for l_row=1 to l_deletedcount
 	if lrowstatus=New! or lrowstatus=NewModified! then continue;
 	i=1
 	ls_deletesyntax="delete from "+ls_updatetable+" "
-	ls_where="where "+ls_dbname[li_key[i]]+" "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_key[i]],ls_coltype[li_key[i]],delete!,true),'where')+" "
+	//ls_where="where "+ls_dbname[li_key[i]]+" "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_key[i]],ls_coltype[li_key[i]],delete!,true),'where')+" "
+	ls_where="where "+ls_dbname[li_key[i]]+"=? "
+	l_parmcount++;la_parm[l_parmcount]=ldw_1.object.data.original[l_row,li_key[i]]
 	for i=2 to li_keycount
-		ls_where+=" and "+ls_colname[li_key[i]]+" "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_key[i]],ls_coltype[li_key[i]],delete!,true),'where')+" "
+		//ls_where+=" and "+ls_colname[li_key[i]]+" "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_key[i]],ls_coltype[li_key[i]],delete!,true),'where')+" "
+		ls_where+=" and "+ls_colname[li_key[i]]+"=? " 
+		l_parmcount++;la_parm[l_parmcount]=ldw_1.object.data.original[l_row,li_key[i]]
 	next
 	ls_sql+=ls_deletesyntax+ls_where+" ~r~n"
 	l_rowsdeleted++
 	l_subcount++
 	if l_subcount=l_batch then 
 		l_sqlcount+=l_subcount
-		execute immediate :ls_sql using ltrans_1;
-		if ltrans_1.sqlcode=-1 then goto e
+		ls_ret=uf_execute(ls_sql,la_parm[],ltrans_1)
+		if ls_ret<>'' then 
+			ls_errtext='uf_execute:'+ls_ret
+			goto e
+		end if
+		//execute immediate :ls_sql using ltrans_1;
+		//if ltrans_1.sqlcode=-1 then goto e
 		if li_check=1 then 
 			if ltrans_1.sqlnrows<>l_subcount then 
 				ls_errtext='Has nochanges '
@@ -4772,12 +4771,22 @@ for l_row=1 to l_deletedcount
 		end if
 		l_subcount=0
 		ls_sql=''
+		l_parmcount=0
+		la_parm[]={''}
 	end if
 next
 
-
+dwobject buffer_data
 
 for li_bufferindex=1 to 2
+	buffer_data=ldw_1.object.__get_attribute('data',false)
+	if ldw_buffer[li_bufferindex]=filter! then 
+		if ldw_1.FilteredCount()<=0 then continue;
+		buffer_data=buffer_data.__get_attribute('filter',false)
+	else
+		if ldw_1.rowCount()<=0 then continue;
+		buffer_data=buffer_data.__get_attribute('primary',false)
+	end if
 	l_row=0
 	do 
 		l_row=ldw_1.GetNextModified(l_row,ldw_buffer[li_bufferindex])
@@ -4785,29 +4794,40 @@ for li_bufferindex=1 to 2
 		lrowstatus=ldw_1.GetItemStatus(l_row,0,ldw_buffer[li_bufferindex])
 		if lrowstatus=NewModified! then //insert
 			i=1
-			ls_insertsyntax="insert into "+ls_updatetable+"("+ls_dbname[li_update[i]]
-			ls_valuesyntax="values("+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],false),'')
+			ls_valuesyntax="select ?"
+			l_parmcount++;la_parm[l_parmcount]=buffer_data.current[l_row,i]
 			for i=2 to li_updatecount
-				ls_insertsyntax+=","+ls_dbname[li_update[i]]
-				ls_valuesyntax+=","+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],false),'')
+				ls_valuesyntax+=',?'
+				l_parmcount++;la_parm[l_parmcount]=buffer_data.current[l_row,i]
 			next
-			ls_sql+=ls_insertsyntax+") "+ls_valuesyntax+") ~r~n"
+			if l_subcount=0 then 
+				ls_sql=ls_insertsyntax 
+			else
+				ls_sql+='~r~n union all '
+			end if
+			ls_sql+='~r~n '+ls_valuesyntax
+			
 			l_rowsinserted++
 			l_subcount++
 		else //update
-			
 			if li_keycount<=0 then 
 				ls_errtext='未设置主键!'
 				goto e
 			end if
 			i=1
-			ls_where="where "+ls_colname[li_key[i]]+" "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_key[i]],ls_coltype[li_key[i]],ldw_buffer[li_bufferindex],true),'where')+" "
+			//ls_where="where "+ls_colname[li_key[i]]+" "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_key[i]],ls_coltype[li_key[i]],ldw_buffer[li_bufferindex],true),'where')+" "
+			ls_where="where "+ls_colname[li_key[i]]+"=? "
+			l_parmcount++;la_parm[l_parmcount]=buffer_data.original[l_row,li_key[i]]
 			for i=2 to li_keycount
-				ls_where+="and "+ls_colname[li_key[i]]+" "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_key[i]],ls_coltype[li_key[i]],ldw_buffer[li_bufferindex],true),'where')+" "
+				//ls_where+="and "+ls_colname[li_key[i]]+" "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_key[i]],ls_coltype[li_key[i]],ldw_buffer[li_bufferindex],true),'where')+" "
+				ls_where+="and "+ls_colname[li_key[i]]+"=? "
+				l_parmcount++;la_parm[l_parmcount]=buffer_data.original[l_row,li_key[i]]
 			next
 			if ls_UpdateWhere='1' then //key+Updateable
 				for i=1 to li_updatecount
-					ls_where+="and "+ls_dbname[li_update[i]]+""+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],true),'where')+" "
+					//ls_where+="and "+ls_dbname[li_update[i]]+""+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],true),'where')+" "
+					ls_where+="and "+ls_dbname[li_update[i]]+"=? "
+					l_parmcount++;la_parm[l_parmcount]=buffer_data.original[l_row,li_update[i]]
 				next
 			end if
 			
@@ -4815,11 +4835,19 @@ for li_bufferindex=1 to 2
 			for i=1 to li_updatecount
 				if ldw_1.getitemstatus(l_row,ls_colname[li_update[i]],ldw_buffer[li_bufferindex])=notmodified! then continue;
 				if ls_setsyntax='' then 
-					ls_setsyntax+="set "+ls_dbname[li_update[i]]+"="+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],false),'')+" "
+					//ls_setsyntax+="set "+ls_dbname[li_update[i]]+"="+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],false),'')+" "
+					ls_setsyntax+="set "+ls_dbname[li_update[i]]+"=? "
+					l_parmcount++;la_parm[l_parmcount]=buffer_data.current[l_row,li_update[i]]
 				else
-					ls_setsyntax+=","+ls_dbname[li_update[i]]+"="+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],false),'')+" "
+					//ls_setsyntax+=","+ls_dbname[li_update[i]]+"="+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],false),'')+" "
+					ls_setsyntax+=","+ls_dbname[li_update[i]]+"=? "
+					l_parmcount++;la_parm[l_parmcount]=buffer_data.current[l_row,li_update[i]]
 				end if
-				if ls_UpdateWhere='2' then ls_where+="and "+ls_dbname[li_update[i]]+""+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],true),'where')+" " //key+modified
+				if ls_UpdateWhere='2' then 
+					//ls_where+="and "+ls_dbname[li_update[i]]+""+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],true),'where')+" " //key+modified
+					ls_where+="and "+ls_dbname[li_update[i]]+"=?" 
+					l_parmcount++;la_parm[l_parmcount]=buffer_data.original[l_row,li_update[i]]
+				end if
 			next
 			if ls_setsyntax='' then continue;
 			
@@ -4830,8 +4858,13 @@ for li_bufferindex=1 to 2
 		
 		if l_subcount=l_batch then 
 			l_sqlcount+=l_subcount
-			execute immediate :ls_sql using ltrans_1;
-			if ltrans_1.sqlcode=-1 then goto e
+			ls_ret=uf_execute(ls_sql,la_parm[],ltrans_1)
+			if ls_ret<>'' then 
+				ls_errtext='uf_execute:'+ls_ret
+				goto e
+			end if
+			//execute immediate :ls_sql using ltrans_1;
+			//if ltrans_1.sqlcode=-1 then goto e
 			if li_check=1 then 
 				if ltrans_1.sqlnrows<>l_subcount then 
 					ls_errtext='Has nochanges '
@@ -4840,6 +4873,8 @@ for li_bufferindex=1 to 2
 			end if
 			l_subcount=0
 			ls_sql=''
+			l_parmcount=0
+			la_parm[]={''}
 		end if
 	loop  until l_row=0
 next
@@ -4847,8 +4882,13 @@ next
 p:
 if ls_sql<>'' then 
 	l_sqlcount+=l_subcount
-	execute immediate :ls_sql using ltrans_1;
-	if ltrans_1.sqlcode=-1 then goto e
+	ls_ret=uf_execute(ls_sql,la_parm[],ltrans_1)
+	if ls_ret<>'' then 
+		ls_errtext='uf_execute:'+ls_ret
+		goto e
+	end if
+//	execute immediate :ls_sql using ltrans_1;
+//	if ltrans_1.sqlcode=-1 then goto e
 	if li_check=1 then 
 		if ltrans_1.sqlnrows<>l_subcount then 
 			ls_errtext='Has nochanges '
@@ -4857,6 +4897,8 @@ if ls_sql<>'' then
 	end if
 	l_subcount=0
 	ls_sql=''
+	l_parmcount=0
+	la_parm[]={''}
 end if
 
 goto m
@@ -5298,6 +5340,64 @@ public function string uf_sql_explain (character ls_sql[], string ls_param);stri
 string ls_a[],ls_b[]
 uf_sql_explain(ls_sql[],ref ls_newsql,ref ls_a[], ref ls_b[])
 return ls_newsql
+end function
+
+public function string tovalue (readonly any la_value, readonly string ls_op);string ls_value
+if ls_op='where' then 
+	if isnull(la_value) then return ' is NULL'
+	choose case classname(la_value)
+		case 'string'
+			ls_value=la_value
+			replaceex(ls_value,'~'','~'~'')
+			return "='"+ls_value+"'"
+		case 'datetime'
+			return "='"+string(la_value,'YYYY-MM-DD hh:mm:ss.fff')+"'"
+		case else
+			return '='+string(la_value)
+	end choose
+else
+	if isnull(la_value) then return 'NULL'
+	choose case classname(la_value)
+		case 'string'
+			ls_value=la_value
+			replaceex(ls_value,'~'','~'~'')
+			return "'"+ls_value+"'"
+		case 'datetime'
+			return "'"+string(la_value,'YYYY-MM-DD hh:mm:ss.fff')+"'"
+		case else
+			return string(la_value)
+	end choose
+end if
+
+
+end function
+
+public function string uf_execute(string as_sql, any a_parm[],transaction ltrans);int i,li_parmcount
+string ls_errtext
+
+PREPARE SQLSA FROM :as_sql using ltrans; 
+DESCRIBE SQLSA INTO SQLDA; 
+
+//若DESCRIBE成功，则输入描述符数组将包含一个输入描述符， 
+//在打开游标前必须先给输入描述符赋值。 
+
+li_parmcount=upperbound(a_Parm[])
+
+for i=1 to li_parmcount
+	if SetDynamicParm(SQLDA,i,a_Parm[i])<>1 then 
+		ls_errtext+='SetDynamicParm:'+string(i)+'失败!~r~n'
+	end if
+next
+
+DECLARE c1 DYNAMIC cursor FOR SQLSA;
+
+open DYNAMIC c1 USING DESCRIPTOR SQLDA; 
+
+if f_sqlcode(ltrans)=-1 then ls_errtext=ltrans.sqlerrtext+'~r~n'
+
+CLOSE c1;
+
+return ls_errtext
 end function
 
 on u_derek_v2_dd.create
