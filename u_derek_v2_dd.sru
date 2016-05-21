@@ -4693,7 +4693,7 @@ if li_insert=1 then //采用全insert的模式
 		if l_subcount=0 then 
 			ls_sql=ls_insertsyntax //+' values'
 		else
-			ls_sql+='~r~n union all '
+			ls_sql+='~r~nunion all '
 			//ls_sql+=','
 		end if
 		ls_sql+='~r~n '+ls_valuesyntax
@@ -4745,11 +4745,11 @@ for l_row=1 to l_deletedcount
 	ls_deletesyntax="delete from "+ls_updatetable+" "
 	//ls_where="where "+ls_dbname[li_key[i]]+" "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_key[i]],ls_coltype[li_key[i]],delete!,true),'where')+" "
 	ls_where="where "+ls_dbname[li_key[i]]+"=? "
-	l_parmcount++;la_parm[l_parmcount]=ldw_1.object.data.original[l_row,li_key[i]]
+	l_parmcount++;la_parm[l_parmcount]=ldw_1.object.data.delete.original[l_row,li_key[i]]
 	for i=2 to li_keycount
 		//ls_where+=" and "+ls_colname[li_key[i]]+" "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_key[i]],ls_coltype[li_key[i]],delete!,true),'where')+" "
-		ls_where+=" and "+ls_colname[li_key[i]]+"=? " 
-		l_parmcount++;la_parm[l_parmcount]=ldw_1.object.data.original[l_row,li_key[i]]
+		ls_where+="and "+ls_colname[li_key[i]]+"=? " 
+		l_parmcount++;la_parm[l_parmcount]=ldw_1.object.data.delete.original[l_row,li_key[i]]
 	next
 	ls_sql+=ls_deletesyntax+ls_where+" ~r~n"
 	l_rowsdeleted++
@@ -4803,7 +4803,7 @@ for li_bufferindex=1 to 2
 			if l_subcount=0 then 
 				ls_sql=ls_insertsyntax 
 			else
-				ls_sql+='~r~n union all '
+				ls_sql+='~r~nunion all '
 			end if
 			ls_sql+='~r~n '+ls_valuesyntax
 			
@@ -4814,6 +4814,21 @@ for li_bufferindex=1 to 2
 				ls_errtext='未设置主键!'
 				goto e
 			end if
+			
+			ls_setsyntax=''
+			for i=1 to li_updatecount
+				if ldw_1.getitemstatus(l_row,ls_colname[li_update[i]],ldw_buffer[li_bufferindex])=notmodified! then continue;
+				if ls_setsyntax='' then 
+					//ls_setsyntax+="set "+ls_dbname[li_update[i]]+"="+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],false),'')+" "
+					ls_setsyntax+="set "+ls_dbname[li_update[i]]+"=? "
+				else
+					//ls_setsyntax+=","+ls_dbname[li_update[i]]+"="+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],false),'')+" "
+					ls_setsyntax+=","+ls_dbname[li_update[i]]+"=? "
+				end if
+				l_parmcount++;la_parm[l_parmcount]=buffer_data.current[l_row,li_update[i]]
+			next
+			if ls_setsyntax='' then continue;
+			
 			i=1
 			//ls_where="where "+ls_colname[li_key[i]]+" "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_key[i]],ls_coltype[li_key[i]],ldw_buffer[li_bufferindex],true),'where')+" "
 			ls_where="where "+ls_colname[li_key[i]]+"=? "
@@ -4829,27 +4844,14 @@ for li_bufferindex=1 to 2
 					ls_where+="and "+ls_dbname[li_update[i]]+"=? "
 					l_parmcount++;la_parm[l_parmcount]=buffer_data.original[l_row,li_update[i]]
 				next
-			end if
-			
-			ls_setsyntax=''
-			for i=1 to li_updatecount
-				if ldw_1.getitemstatus(l_row,ls_colname[li_update[i]],ldw_buffer[li_bufferindex])=notmodified! then continue;
-				if ls_setsyntax='' then 
-					//ls_setsyntax+="set "+ls_dbname[li_update[i]]+"="+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],false),'')+" "
-					ls_setsyntax+="set "+ls_dbname[li_update[i]]+"=? "
-					l_parmcount++;la_parm[l_parmcount]=buffer_data.current[l_row,li_update[i]]
-				else
-					//ls_setsyntax+=","+ls_dbname[li_update[i]]+"="+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],false),'')+" "
-					ls_setsyntax+=","+ls_dbname[li_update[i]]+"=? "
-					l_parmcount++;la_parm[l_parmcount]=buffer_data.current[l_row,li_update[i]]
-				end if
-				if ls_UpdateWhere='2' then 
+			elseif ls_UpdateWhere='2' then 
+				for i=1 to li_updatecount
+					if ldw_1.getitemstatus(l_row,ls_colname[li_update[i]],ldw_buffer[li_bufferindex])=notmodified! then continue;
 					//ls_where+="and "+ls_dbname[li_update[i]]+""+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],true),'where')+" " //key+modified
-					ls_where+="and "+ls_dbname[li_update[i]]+"=?" 
+					ls_where+="and "+ls_dbname[li_update[i]]+"=? " 
 					l_parmcount++;la_parm[l_parmcount]=buffer_data.original[l_row,li_update[i]]
-				end if
-			next
-			if ls_setsyntax='' then continue;
+				next
+			end if
 			
 			ls_sql+="update "+ls_updatetable+" "+ls_setsyntax+ls_where+" ~r~n"
 			l_rowsupdated++
