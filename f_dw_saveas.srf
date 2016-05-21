@@ -1,0 +1,154 @@
+$PBExportHeader$f_dw_saveas.srf
+global type f_dw_saveas from function_object
+end type
+
+forward prototypes
+global function string f_dw_saveas (datawindow adw, string as_replace)
+end prototypes
+
+global function string f_dw_saveas (datawindow adw, string as_replace);
+string ls_path,ls_file,ls_file_temp,ls_ext	//选择的路径	//选择的文件
+long i,l_ret,l_count,l_pos
+string ls_errtext
+string ls_excelext
+dec ld_excelver
+string ls_current_path,ls_htmlsyntax
+string ls_extstring="Comma-separated values(*.csv),*.csv,Text Document(*.txt),*.txt,Html Table(*.html),*.html,Powersoft Report(*.psr),*.psr,Enhanced Metafile Format(*.emf),*.emf,Windows Metafile Format(*.wmf),*.wmf,All Files (*.*),*.*"
+u_derek_v2_excel u_excel
+u_derek_v2_fun u_fun
+
+u_excel=create u_derek_v2_excel
+u_fun=create u_derek_v2_fun
+
+ls_path=adw.title
+
+//f_dw_excel只能正常导出xls
+ld_excelver=dec(u_excel.getversion(ls_errtext))
+if ls_errtext='' then 
+	if ld_excelver>=12.0 then 
+		ls_excelext="xlsx"
+	else
+		ls_excelext="xls"
+	end if 
+	ls_extstring="Excel(*."+ls_excelext+"),*."+ls_excelext+","+ls_extstring
+else
+	f_messagebox('',ls_errtext,0,0)
+	ls_errtext=''
+end if
+//获取当前目录
+ls_current_path=GetCurrentDirectory()
+
+//批量导入
+//l_ret=u_fun.GetFileSaveName("Save as",ls_path,ls_file,"", ls_extstring)
+l_ret=u_fun.GetFileSaveName("Save File",ls_path,ls_file,"",ls_extstring,'',18)
+if l_ret=-1 then
+	ls_errtext='打开函数调用失败!'
+	goto e
+elseif l_ret=0 then
+	ls_errtext='0'
+	goto e 
+end if
+
+if fileexists(ls_path) then 
+	if upper(as_replace)='Y' then
+
+	else
+		if messagebox('','File "'+ls_path+'" already exists,replace?',exclamation!,yesno!,2)<>1 then 
+			ls_errtext='0'
+			goto e 
+		end if
+	end if
+end if
+
+//临时文件路径
+ls_file=ls_current_path+'\'+ls_file
+l_pos=lastpos(ls_file,'.')
+ls_ext=upper(mid(ls_file,l_pos))
+
+choose case ls_ext
+	case '.TXT' //指定txt类型时会系统自动加上txt后缀
+		l_ret=adw.SaveAsFormattedText(ls_file,Encodingansi!)
+	case '.CSV','.XLSX','.XLS'
+		ls_file_temp=mid(ls_file,1,l_pos - 1)+'.csv'
+		l_ret=adw.SaveAsFormattedText(ls_file_temp,encodingansi!,',','"')
+		if l_ret=1 and ls_ext<>'.CSV' then
+			if ld_excelver>=12.0 then	//>=2007
+				if ls_ext='.XLSX'  then 
+					ls_errtext=u_excel.sheetsaveas(ls_file_temp,1,ls_file,51)
+				elseif ls_ext='.XLS' then
+					ls_errtext=u_excel.sheetsaveas(ls_file_temp,1,ls_file,56)
+				end if
+			elseif ld_excelver>0 then	//小于2007
+				ls_errtext=u_excel.sheetsaveas(ls_file_temp,1,ls_file,51)
+			else	//无excel
+				l_ret=filecopy(ls_file_temp,ls_file,true)
+			end if
+				
+			filedelete(ls_file_temp)			
+			if ls_errtext<>'' then goto e
+		end if
+	case '.HTM','.HTML'
+		adw.modify("DataWindow.HTMLTable.GenerateCSS='1'")	//保持格式及颜色
+		adw.modify("DataWindow.HTMLTable.Border='0'")	//不要table边框
+		adw.modify("DataWindow.HTMLTable.CellSpacing='0'")	//单元格无间距
+		
+//		ls_errtext=u_dd.uf_dwoband(adw)
+//		if ls_errtext<>'' then goto e
+		//增加html标记,否则excel打开时会提示后缀名错误
+		ls_htmlsyntax="<html>"+adw.describe("datawindow.data.html")+"</html>"
+		//去除css中开头的无效分号
+		ls_htmlsyntax=u_fun.replace(ls_htmlsyntax,'{;','{')
+		
+		if fileexists(ls_file) then 
+			if filedelete(ls_file)=false then
+				ls_errtext=ls_file+" delete failed!"
+				goto e
+			end if
+		end if
+		
+		ls_errtext=u_fun.uf_filewrite(ls_file,ls_htmlsyntax,Replace!,encodingutf8!) //ansi有时用excel打开为乱码
+		if ls_errtext<>'' then goto e
+		
+//		l_ret=adw.saveas(ls_file,htmltable!,true)
+	case '.PSR'
+		l_ret=adw.saveas(ls_file,PSReport!,true)
+	case '.EMF'
+		l_ret=adw.saveas(ls_file,EMF!,true)
+	case '.WMF'
+		l_ret=adw.saveas(ls_file,WMF!,true)
+	case else
+		l_ret=adw.saveas('',PSReport!,true)
+end choose
+
+if l_ret<>1 then 
+	ls_errtext='File '+ls_file+' Export Failed!'
+	goto e
+end if
+
+//删除目标文件
+if fileexists(ls_path) then 
+
+	if filedelete(ls_path)=false then
+		ls_errtext=ls_path+" delete failed!"
+		goto e
+	end if
+
+end if
+
+//转移到最终路径
+l_ret=filemove(ls_file,ls_path)
+if l_ret<>1 then 
+	ls_errtext='File '+ls_file+' Move Failed:'+string(l_ret)
+	goto e
+end if
+
+e:
+if ls_errtext<>'' and ls_errtext<>'0'  then f_messagebox('',ls_errtext,0,0)
+
+//u_fun.SetCurrentDirectory(g_current_path)
+//if ib_wait=false then closewait()
+if isvalid(u_fun) then destroy u_fun
+if isvalid(u_excel) then destroy u_excel
+return ls_errtext
+end function
+

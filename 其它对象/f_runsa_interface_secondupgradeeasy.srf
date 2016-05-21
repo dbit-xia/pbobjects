@@ -1,0 +1,50 @@
+$PBExportHeader$f_runsa_interface_secondupgradeeasy.srf
+global type f_runsa_interface_secondupgradeeasy from function_object
+end type
+
+forward prototypes
+global function string f_runsa_interface_secondupgradeeasy (string ls_flags)
+end prototypes
+
+global function string f_runsa_interface_secondupgradeeasy (string ls_flags);string ls_errtext,ls_ret,ls_sql
+long l_ret
+int li_upb,i
+string ls_sqls[]
+boolean lb_wait,lb_autocommit
+u_runsa_derek_v2 lu_derek
+
+lb_wait=isvalid(w_wait)
+
+lu_derek=create u_runsa_derek_v2
+
+lu_derek.wait(1,'Get upgrade data')
+
+lu_derek.u_dd.ids.dataobject="d_runsa_interface_secondupgradeeasy"
+ls_sql=lu_derek.u_dd.ids.getsqlselect()
+ls_sqls=lu_derek.u_fun.getarray(ls_sql,"~r~nGO~r~n",0,1)
+li_upb=upperbound(ls_sqls)
+if li_upb>0 then 
+	lb_autocommit=SQLCA.AutoCommit
+	SQLCA.AutoCommit   =   TRUE
+	for i=1 to li_upb
+		lu_derek.wait(100 * i / li_upb,ls_sqls[i])
+		if ls_sqls[i]='' then continue;
+		execute immediate :ls_sqls[i];
+		if sqlca.sqlcode=-1 and sqlca.sqldbcode<>2714 and sqlca.sqldbcode<>1913 then //忽略表存在,索引存在
+			ls_ret=ls_sqls[i]+' '+sqlca.sqlerrtext+""
+			ls_errtext+=ls_ret+'~r~n'
+		else
+			ls_ret=ls_sqls[i]+' '+'成功'+"!"
+		end if
+		f_wgz_errorlog(ls_ret)
+	next
+	SQLCA.AutoCommit   =   false
+end if
+
+if lb_autocommit<>SQLCA.AutoCommit then SQLCA.AutoCommit=lb_autocommit
+if lb_wait=false and isvalid(w_wait) then close(w_wait)
+destroy lu_derek
+
+return ls_errtext
+end function
+

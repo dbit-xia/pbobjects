@@ -1,0 +1,21 @@
+$PBExportHeader$f_interface_profile.srf
+global type f_interface_profile from function_object
+end type
+
+forward prototypes
+global function string f_interface_profile (string ls_names, string ls_section, string ls_fiedname,string ls_default)
+end prototypes
+
+global function string f_interface_profile (string ls_names, string ls_section, string ls_fiedname,string ls_default );string ls_value
+
+select max(value) 
+into :ls_value
+from interface_profile
+where names=:ls_names and section=:ls_section and fieldname=:ls_fiedname using sqlca;
+
+if isnull(ls_value) then ls_value=ls_default
+
+return ls_value
+
+end function
+

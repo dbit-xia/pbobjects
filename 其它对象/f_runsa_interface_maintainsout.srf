@@ -1,0 +1,20 @@
+$PBExportHeader$f_runsa_interface_maintainsout.srf
+global type f_runsa_interface_maintainsout from function_object
+end type
+
+forward prototypes
+global function string f_runsa_interface_maintainsout (string ls_flags)
+end prototypes
+
+global function string f_runsa_interface_maintainsout (string ls_flags);
+//增加接口，代码格式样本为 序号必须8开头，代号必须个性化代码 sout_ 开头
+
+//f_default_parm_mx(序号,访问级别,代号,名称,0,'默认值',说明,'1',1)
+
+//预发货单
+//f_default_parm_mx('8001',2,'sout_crm','CRM设置',0,'','{typeno=0080067,0080072;}正价商品分类;','1',1)
+
+
+return '1'
+end function
+

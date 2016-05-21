@@ -1,0 +1,265 @@
+$PBExportHeader$f_derek_selection.srf
+global type f_derek_selection from function_object
+end type
+
+forward prototypes
+global function string f_derek_selection (dragobject aobj, string as_sql, string as_refield, string as_flags)
+global function string f_derek_selection (dragobject aobj, string as_sql, string as_refield, string as_flags, transaction ltrans_1)
+end prototypes
+
+global function string f_derek_selection (dragobject aobj, string as_sql, string as_refield, string as_flags)
+	return f_derek_selection (aobj, as_sql, as_refield, as_flags,sqlca)
+end function 
+
+global function string f_derek_selection (dragobject aobj, string as_sql, string as_refield, string as_flags, transaction ltrans_1);string ls_errtext
+string ls_text
+long l_ret
+int li_xpos,li_ypos,li_width,li_height,li_pos
+string ls_dwo,ls_dwoname,ls_gridcolumns,ls_lastcol,ls_title,ls_modify,ls_dataobject,ls_units,ls_find
+long l_row,l_pos,l_endpos,l_startpos
+//ldw_selection ldw_selection //不能声明局部变量,否则外面获取不到
+datawindow ldw
+dragobject lparent
+powerobject lpo
+window lw
+string ls_filter,ls_usefilter //使用过滤
+//string ls_showtype
+long l_colnum,i
+singlelineedit lsle
+EditMask lem
+uo_derek_dw_selection ldw_selection
+
+choose case typeof(aobj) 
+	case singlelineedit!
+		lsle=aobj
+		ls_text=lsle.text
+	case editmask!
+		lem=aobj
+		ls_text=lem.text
+	case datawindow!
+		ldw=aobj
+		ls_text=ldw.gettext()
+end choose
+
+if typeof(aobj)=datawindow! then 
+	ldw=aobj
+	if keydown(KeyRightButton!) then 
+		ls_dwo=ldw.getobjectatpointer()
+		ls_dwoname=mid(ls_dwo,1,pos(ls_dwo,'~t') - 1)
+		if ldw.describe(ls_dwoname+".type")<>'column' then goto e
+		l_row=long(mid(ls_dwo,pos(ls_dwo,'~t') + 1))
+		if l_row=0 then goto e
+	else
+		ls_dwoname=ldw.getcolumnname()
+		l_row=ldw.getrow()
+	end if
+	
+	if ldw.getrow()<>l_row or ldw.getcolumnname()<>ls_dwoname then 
+		if ldw.accepttext()=-1 then goto e
+		if  ldw.getrow()<>l_row then 
+			if ldw.setrow(l_row)=-1 then goto e
+			if ldw.getrow()<>l_row then goto e
+		end if
+		if ldw.getcolumnname()<>ls_dwoname then
+			if ldw.setcolumn(ls_dwoname)=-1 then goto e
+			if ldw.getcolumnname()<>ls_dwoname then goto e
+		end if
+	end if
+end if 
+
+lpo=aobj //.getparent()
+
+//查找所属窗口
+do while(typeof(lpo)<>window! )
+	lpo=lpo.getparent()
+loop 
+
+lw=lpo
+
+if isvalid(uo_derek_dw_selection)  then 
+	if uo_derek_dw_selection.getparent()<>lw then 
+		if lw.closeuserobject(uo_derek_dw_selection)=-1 then 
+			ls_errtext="关闭选择窗口失败!"
+			goto e
+		end if
+	end if
+end if
+
+if isvalid(uo_derek_dw_selection)=false then 
+	if lw.openuserobject(uo_derek_dw_selection)=-1 then 
+		ls_errtext="打开选择窗口失败!"
+		goto e
+	end if
+end if
+
+ldw_selection=uo_derek_dw_selection
+ldw_selection.uf_initial()
+ldw_selection.hide()
+
+//解析参数 title,modify,dataobject
+
+ls_find='dataobject='
+l_pos=pos(as_flags,ls_find)
+if l_pos>0 then
+	l_startpos=l_pos+len(ls_find)
+	l_endpos=pos(as_flags,';',l_startpos)
+	if l_endpos=0 then l_endpos=len(as_flags) + 1
+	ls_dataobject=mid(as_flags,l_startpos,l_endpos - l_startpos)
+	as_flags=left(as_flags,l_pos - 1)+mid(as_flags,l_endpos+1)
+end if
+
+////显示方式
+//ls_find='showtype='
+//l_pos=pos(as_flags,ls_find)
+//if l_pos>0 then
+//	l_startpos=l_pos+len(ls_find)
+//	l_endpos=pos(as_flags,';',l_startpos)
+//	if l_endpos=0 then l_endpos=len(as_flags) + 1
+//	ls_showtype=mid(as_flags,l_startpos,l_endpos - l_startpos)
+//	as_flags=left(as_flags,l_pos - 1)+mid(as_flags,l_endpos+1)
+//end if
+
+//使用过滤
+ls_find='usefilter='
+l_pos=pos(as_flags,ls_find)
+if l_pos>0 then
+	l_startpos=l_pos+len(ls_find)
+	l_endpos=pos(as_flags,';',l_startpos)
+	if l_endpos=0 then l_endpos=len(as_flags) + 1
+	ls_usefilter=mid(as_flags,l_startpos,l_endpos - l_startpos)
+	as_flags=left(as_flags,l_pos - 1)+mid(as_flags,l_endpos+1)
+end if
+
+if ls_usefilter='' then ls_usefilter='1' //默认使用过滤
+
+if ls_dataobject<>'' then 
+	ldw_selection.dataobject=ls_dataobject
+	if ldw_selection.describe('datawindow.syntax')='' then 
+		ls_errtext='不存在的dataobject:'+ls_dataobject
+		goto e
+	end if
+elseif as_sql<>'' then 
+	ls_errtext=ldw_selection.getquery(ldw_selection,as_sql,ltrans_1)
+end if
+
+li_pos=pos(as_flags,';')
+
+if li_pos>0 then 
+	ls_title=left(as_flags,li_pos - 1)
+	ls_modify=mid(as_flags,li_pos + 1 )
+else
+	ls_title=as_flags
+end if
+
+ldw_selection.title=ls_title
+
+if ls_errtext<>'' then goto e
+
+if ls_modify<>'' then ldw_selection.modify(ls_modify)
+
+ldw_selection.idragobj=aobj
+ldw_selection.is_refield=as_refield
+
+if ldw_selection.settransobject(ltrans_1)=-1 then 
+	ls_errtext="设置事务失败!"
+	goto e
+end if
+
+if as_sql<>'' then 
+	ldw_selection.uf_setstyle(1)
+	if ldw_selection.describe("datawindow.table.sort")='' then ldw_selection.setsort('#1 A')
+	if ldw_selection.retrieve()=-1 then 
+		ls_errtext="检索失败!"
+		goto e
+	end if
+end if
+
+//不需要过滤
+if ldw_selection.is_refield='' then goto m
+
+//检查是否是列
+if ldw_selection.describe(ldw_selection.is_refield+'.name')=ldw_selection.is_refield then ldw_selection.is_fieldtype='column'
+if ldw_selection.is_fieldtype='column' then ldw_selection.setcolumn(ldw_selection.is_refield)
+
+//匹配
+if ls_usefilter='1' and ldw_selection.rowcount()>0 then 
+	
+	if ls_text<>'' then 
+		
+		l_colnum=ldw_selection.u_dd.getcolumns(ldw_selection,1,ldw_selection.is_column[])
+		//messagebox('外面',l_colnum)
+		ls_filter=''
+		for i=1 to l_colnum
+			if left(ldw_selection.describe(ldw_selection.is_column[i]+'.Coltype'),4)<>'char' then continue;
+			if i<>1 then ls_filter+=' or ' 
+			ls_filter+=' ('+ldw_selection.is_column[i]+" like '%"+ls_text+"%') "
+		next
+		//messagebox('',ls_filter)
+		l_ret=ldw_selection.setfilter(ls_filter)
+		if l_ret>0 then 
+			ldw_selection.filter()
+		end if
+	end if
+end if
+
+//定位
+l_ret=ldw_selection.find(ldw_selection.is_refield+" like '%"+ls_text+"%'",1,ldw_selection.rowcount())
+if l_ret>0 then 
+	ldw_selection.scrolltorow(l_ret)
+end if
+
+goto m
+m:
+
+//取最后一列的位置和宽度
+ls_gridcolumns=ldw_selection.Describe("datawindow.table.GridColumns") 
+ls_lastcol="#"+mid(ls_gridcolumns,lastpos(ls_gridcolumns,'~t') + 1)
+li_width=integer(ldw_selection.describe(ls_lastcol+".X")) + integer(ldw_selection.describe(ls_lastcol+".width"))
+
+ls_units=ldw_selection.Describe("DataWindow.Units")
+if ls_units='1' then //pixels
+	li_width=min(lw.workspacewidth(),pixelstounits(li_width,Xpixelstounits!))
+elseif ls_units='0' then //pbunits
+	li_width=min(lw.workspacewidth(),li_width)
+else
+	li_width=pixelstounits(350,Xpixelstounits!)
+end if
+
+li_width+=pixelstounits(25,Xpixelstounits!) //预留滚动条的宽度
+
+//if ls_dataobject<>'' and ls_showtype='' then //有dataobject,不确定显示行数,所以尽量取大
+//	ls_showtype='0' //0 默认为max(lw.pointerY(),lw.workspaceheight() - lw.pointerY())
+//end if
+//and ls_showtype='1'
+
+//dataobject<>'' and rowcount()=0 的执行else
+if (as_sql<>'' or ldw_selection.rowcount()>=1) and ldw_selection.rowcount()<=15 then //自动调整
+	li_height=min(pixelstounits(300,Ypixelstounits!),lw.workspaceheight())
+else
+	li_height=max(lw.pointerY(),lw.workspaceheight() - lw.pointerY())
+end if
+	
+//计算位置
+li_ypos=min(lw.pointerY(),lw.workspaceheight() - li_height)
+
+ldw_selection.move(lw.pointerX(),li_ypos)
+ldw_selection.resize(li_width,li_height)
+
+ldw_selection.BringToTop=true
+ldw_selection.show()
+choose case typeof(aobj)
+	case singlelineedit!
+		lsle.text=ls_text //可防止触发modified事件
+		ldw_selection.setfocus()
+	case else
+		ldw_selection.setfocus()
+end choose
+
+//setnull(ldw_selection)
+
+return ''
+
+e:
+return ls_errtext
+end function
+

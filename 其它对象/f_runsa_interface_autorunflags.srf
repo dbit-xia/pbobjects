@@ -1,0 +1,23 @@
+$PBExportHeader$f_runsa_interface_autorunflags.srf
+global type f_runsa_interface_autorunflags from function_object
+end type
+
+forward prototypes
+global function string f_runsa_interface_autorunflags (string ls_flags)
+end prototypes
+
+global function string f_runsa_interface_autorunflags (string ls_flags);// /*0121*/
+//   string ls_flags,ls_flags0
+//   ls_flags=f_zg_sout('autorunflags,;','')
+//   ls_flags0=dw_1.describe('flags.values')
+//   if len(ls_flags)>2 then
+//    dw_1.modify('flags.values="'+ls_flags0 + ls_flags+'"')
+//   end if
+//   /**/
+
+string ls_ret
+//ls_ret="货运单	301/多款配货	302/送货单	303/厂入库	304/退货入库	305/预发货单	306/店退仓	307/店转货	308/差异	309/店退仓申请	310/调货通知	311/仓出店	312/移仓申请	313/移入指令	314/移仓收货确认	315/"
+
+return ls_ret
+end function
+

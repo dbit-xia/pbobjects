@@ -1,0 +1,31 @@
+$PBExportHeader$f_file_memory.srf
+$PBExportComments$写文本文件
+global type f_file_memory from function_object
+end type
+
+forward prototypes
+global function integer f_file_memory (string as_file, string as_content)
+end prototypes
+
+global function integer f_file_memory (string as_file, string as_content);long ll_ret,ll_filenum
+
+ll_filenum = fileopen(as_file,Linemode!,Write!,LockWrite!,Append!)
+
+if ll_filenum = -1 or isnull(ll_filenum) then
+	return 0
+end if
+
+ll_ret = filewrite(ll_filenum,as_content)
+if ll_ret = -1 or isnull(ll_ret) then
+	return 0
+end if
+
+ll_ret = fileclose(ll_filenum)
+if ll_ret = -1 or isnull(ll_ret) then
+	return 0
+end if
+
+return 1
+
+end function
+

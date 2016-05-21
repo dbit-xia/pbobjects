@@ -1,0 +1,129 @@
+$PBExportHeader$f_runsabenson_replacechar.srf
+$PBExportComments$字段中字符替换函数
+global type f_runsabenson_replacechar from function_object
+end type
+
+forward prototypes
+global function string f_runsabenson_replacechar (string l_table, string l_col, string l_str1, string l_str2, string l_col2, ref long l_ret)
+end prototypes
+
+global function string f_runsabenson_replacechar (string l_table, string l_col, string l_str1, string l_str2, string l_col2, ref long l_ret);/*函数名称：f_runsabenson_replacehc (string l_table, string l_col, string l_str1, string l_str2, string l_col2,long l_ret) return string
+函数功能：替换列中的字符
+参数说明：l_table 要更新的表,l_col 要替换回车符的列,l_str1 要替换的字符串,l_str2 替换之后的字符串,l_col2 其他字段,l_ret 返回值记录数
+返回值：成功返回空，失败返回错误信息
+作者：Benson 20140716
+*/
+string ls_sql,ls_errtext
+long i,li_parmcount
+boolean lb_c1,lb_my_cursor
+any a_parm[]
+
+
+
+//字符串相同返回记录数
+if l_str1=l_str2 then 
+	ls_sql="select count(*) from "+l_table+" where charindex(?,"+l_table+"."+l_col+")>0 "
+	
+//	ls_sql="select count(*) from "+l_table+",easytemp t1 where t1.recno="+string(g_recno,'')+"and charindex(t1.bz1,"+l_table+"."+l_col+")>0 "
+	PREPARE SQLSA FROM :ls_sql ;
+	if sqlca.sqlcode=-1 then goto e
+	
+	DESCRIBE SQLSA INTO SQLDA ;
+	if sqlca.sqlcode=-1 then goto e
+	
+	DECLARE my_cursor DYNAMIC CURSOR FOR SQLSA ;
+	
+	if sqlca.sqlcode=-1 then goto e
+	
+//	OPEN DYNAMIC my_cursor USING DESCRIPTOR SQLDA ;
+	OPEN DYNAMIC my_cursor USING :l_str1 ;
+	
+	if sqlca.sqlcode=-1 then goto e
+	
+	lb_my_cursor=true
+	
+	FETCH my_cursor into :l_ret ;
+//	FETCH my_cursor USING DESCRIPTOR SQLDA ;
+
+	if sqlca.sqlcode=-1 then goto e
+	
+//	l_ret = GetDynamicNumber(SQLDA,1)
+	
+	close my_cursor;
+	
+	if sqlca.sqlcode=-1 then goto e
+	
+	lb_my_cursor=false
+	
+	goto e
+end if
+
+//清除临时表
+delete easytemp where recno=:g_recno;
+
+if sqlca.sqlcode=-1 then goto e
+
+//字符放入临时表
+ls_sql="insert into easytemp(recno,bz1,bz2) values("+string(g_recno)+",?,?) "
+
+a_parm[1]=l_str1
+a_parm[2]=l_str2
+
+PREPARE SQLSA FROM :ls_sql; 
+
+DESCRIBE SQLSA INTO SQLDA; 
+
+li_parmcount=upperbound(a_Parm[])
+
+for i=1 to li_parmcount
+	if SetDynamicParm(SQLDA,i,a_Parm[i])<>1 then 
+		ls_errtext+='SetDynamicParm:'+string(i)+'失败!~r~n'
+	end if
+next
+if ls_errtext<>'' then goto e
+
+DECLARE c1 DYNAMIC cursor FOR SQLSA;
+
+open DYNAMIC c1 USING DESCRIPTOR SQLDA; 
+
+if sqlca.sqlcode=-1 then goto e
+
+lb_c1=true
+
+
+close c1;
+if sqlca.sqlcode=-1 then goto e
+lb_c1=false
+
+
+//防止出现null
+l_table=string(l_table,'')
+l_col=string(l_col,'')
+l_col2=string(l_col2,'')
+
+//目标表关联临时表替换字符
+ls_sql="update "+l_table+" set "+l_col+"=str_replace("+l_table+"."+l_col+",t1.bz1,t1.bz2)"+l_col2+" from "+l_table+",easytemp t1 where t1.recno="+string(g_recno,'')+" &
+and charindex(t1.bz1,"+l_table+"."+l_col+")>0 "
+
+if string(ls_sql,'')<>'' then
+	execute immediate :ls_sql;
+	if sqlca.sqlcode=-1 then goto e
+	l_ret=sqlca.sqlnrows
+end if
+
+//清除临时表
+delete easytemp where recno=:g_recno;
+if sqlca.sqlcode=-1 then goto e
+
+
+e:
+if sqlca.sqlcode=-1 then ls_errtext+=sqlca.sqlerrtext
+if lb_my_cursor=true then 
+	close my_cursor;
+end if
+if lb_c1=true then 
+	close c1;
+end if
+return ls_errtext
+end function
+

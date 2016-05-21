@@ -1,0 +1,187 @@
+$PBExportHeader$f_derek_filenamebeforeincheck.srf
+global type f_derek_filenamebeforeincheck from function_object
+end type
+
+forward prototypes
+global function string f_derek_filenamebeforeincheck (string ls_flags)
+end prototypes
+
+global function string f_derek_filenamebeforeincheck (string ls_flags);//if fileexists(l_s_filename) then
+// if f_zg_sout('filenamebeforeincheck,filename='+l_s_filename+',;','')='-1' then
+//  l_d_filename=''
+//  goto thisend
+// end if
+//end if
+string ls_filename
+string ls_msgtitle,ls_errtext,ls_msgbox='1',ls_address
+boolean lb_wait,lb_cancel
+lb_wait=isvalid(w_wait)
+PopulateError(0, '');ls_msgtitle=error.object+'.'+error.objectevent
+
+string ls_text[] //={'~n','	','"'}
+string ls_charname[] //={'换行符','制表符','双引号'}
+boolean lb_newopen
+string ls_logfile
+long i,l_count,m,l_pos
+boolean lb_fileopen
+long l_findcount
+string ls_firstAddress 
+//u_runsa_derek_v2 lu_derek
+oleobject lole_excel
+int li_ret
+string ls_chars,ls_temparray[]
+u_runsa_derek_v2_dd lu_dd
+u_runsa_derek_v2_fun lu_fun
+datastore lds_temp
+
+lu_dd=create u_runsa_derek_v2_dd
+lu_fun=create u_runsa_derek_v2_fun
+lds_temp=create datastore
+
+ls_filename=f_maintain_s(ls_flags,'filename=',',')
+
+ls_chars=f_maintain('sout_excel','chars=')
+if ls_chars='' or ls_chars='-1' then ls_chars='双引号 ",换行 10'
+//lu_derek=create u_runsa_derek_v2
+
+l_count=lu_fun.getarray(ls_chars,ls_temparray[],',')
+if l_count=0 then goto m
+
+for i=1 to l_count
+	l_pos=pos(ls_temparray[i],' ')
+	ls_charname[i]=left(ls_temparray[i],l_pos - 1)
+	ls_text[i]=mid(ls_temparray[i],l_pos + 1)
+	if isnumber(ls_text[i]) then ls_text[i]=charA(long(ls_text[i]))
+next
+
+//ls_errtext=lu_derek.u_excel.appconnect("Excel.application" )
+
+lole_excel=create oleobject
+li_ret=lole_excel.connecttonewobject('Excel.application')
+if li_ret<>0 then 
+	ls_errtext=lu_fun.uf_geterrtext('connecttonewobject',li_ret)
+	if ls_errtext<>'' then goto e
+end if
+
+ls_errtext=lu_dd.getquery(lds_temp,'column=bz;')
+if ls_errtext<>'' then goto e
+
+//
+////将text文件用excel打开,并且每一列都设置为文本
+oleobject lole_range
+
+try 
+	open(w_wait)
+	w_wait.st_1.text='正在打开文件'
+	lole_excel.application.workbooks.Open(ls_filename)
+	lb_newopen=true
+	
+//	Cells.Find(What:="产品名称", After:=ActiveCell, LookIn:=xlFormulas, LookAt _
+//        :=xlPart, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:= _
+//        False, MatchByte:=False, SearchFormat:=False)
+	
+	long l_array_count
+	l_array_count=upperbound(ls_text[])
+	
+	ls_errtext=''
+	l_findcount=0
+	
+	for i=1 to l_array_count
+		w_wait.st_1.text='开始查找非法字符_'+string(i)
+		
+		//setnull(lole_range)
+		lole_range=lole_excel.application.ActiveWorkbook.ActiveSheet.Cells.Find(ls_text[i])
+		
+		if isnull(lole_range)=false then
+			
+			if isvalid(lole_range)=true then 
+				l_findcount++
+				w_wait.st_wait.text='已找到非法字符数'
+				w_wait.st_1.text=string(l_findcount)
+//				l_rows[1]=lole_range.row
+//				l_column[1]=lole_range.column
+				ls_firstAddress=lole_range.Address(false,false)
+				
+				//ls_errtext+="存在有["+ls_charname[i]+"]的单元格:"+'~r~n'+ls_firstAddress+' ~r~n'
+				lds_temp.setitem(lds_temp.insertrow(0),1,"存在有["+ls_charname[i]+"]的单元格:")
+				lds_temp.setitem(lds_temp.insertrow(0),1,ls_firstAddress)
+				do
+					yield()
+					lole_range=lole_excel.application.ActiveWorkbook.ActiveSheet.Cells.FindNext(lole_range)
+					if isnull(lole_range) then exit
+					if isvalid(lole_range)=false then exit
+					ls_address=lole_range.Address(false,false)
+					if ls_address=ls_firstAddress then exit //从头开始了
+					l_findcount++
+					lds_temp.setitem(lds_temp.insertrow(0),1,ls_address)
+					yield()
+					if isvalid(w_wait)=false then 
+						lb_cancel=true
+						THROW create runtimeerror
+					end if
+					if mod(l_findcount,100)=0 then w_wait.st_1.text=string(l_findcount)
+					yield()
+					//ls_errtext+=ls_address+'~r~n'
+//					l_rows[i]=lole_range.row
+//					l_column[i]=lole_range.column
+				loop until 1<>1
+			end if
+		end if
+	next
+	
+catch (runtimeerror e)
+	ls_errtext+=e.getmessage()
+finally
+	if lb_newopen=true then lole_excel.application.Workbooks.Close
+	lole_excel.application.quit
+	lole_excel.disconnectobject()
+end try 
+if ls_errtext<>'' then goto e
+if l_findcount>0 then 
+	ls_logfile=g_zgtemppath+'\'+'excelresult.txt'
+	if lds_temp.saveas(ls_logfile,text!,false)=-1 then 
+		ls_errtext+='写入日志文件失败!'
+		goto e
+	end if
+	if lb_cancel=true then 
+		ls_errtext='用户取消操作,已'
+	end if
+	if lb_wait=false and isvalid(w_wait) then close(w_wait)
+	if f_messagebox('',ls_errtext+'检查到非法字符的内容,是否查看日志文件?',2,2)=1 then 
+		run('explorer "'+ls_logfile+'"')
+	end if
+	ls_errtext=''
+	goto e
+end if
+
+goto m
+m:
+lds_temp.dataobject=''
+if isvalid(lole_excel) then
+	if isalive(lole_excel) then lole_excel.disconnectobject()
+	destroy lole_excel
+end if
+if isvalid(lu_dd) then destroy lu_dd
+if isvalid(lu_fun) then destroy lu_fun
+if isvalid(lds_temp) then destroy lds_temp
+if lb_wait=false and isvalid(w_wait) then close(w_wait)
+return '1'
+
+goto e
+e:
+lds_temp.dataobject=''
+if isvalid(lole_excel) then
+	if isalive(lole_excel) then lole_excel.disconnectobject()
+	destroy lole_excel
+end if
+if isvalid(lu_dd) then destroy lu_dd
+if isvalid(lu_fun) then destroy lu_fun
+if isvalid(lds_temp) then destroy lds_temp
+if ls_msgbox='1' and ls_errtext<>'' then 
+	if pos(ls_errtext,'~r~n')>0 then ls_errtext+=fill(' ',max(40 - len(ls_errtext),0))
+	f_messagebox('',ls_errtext,0,0)
+end if
+if lb_wait=false and isvalid(w_wait) then close(w_wait)
+return '-1'
+end function
+

@@ -1,0 +1,472 @@
+$PBExportHeader$m_dw.srm
+forward
+global type m_dw from menu
+end type
+type m_text from menu within m_dw
+end type
+type m_剪切t from menucascade within m_text
+end type
+type m_0 from menu within m_text
+end type
+type m_paste from menu within m_text
+end type
+type m_1 from menu within m_text
+end type
+type m_导入 from menu within m_text
+end type
+type m_导出 from menu within m_text
+end type
+type m_2 from menu within m_text
+end type
+type m_querymode from menu within m_text
+end type
+type m_sort from menu within m_text
+end type
+type m_text from menu within m_dw
+m_剪切t m_剪切t
+m_0 m_0
+m_paste m_paste
+m_1 m_1
+m_导入 m_导入
+m_导出 m_导出
+m_2 m_2
+m_querymode m_querymode
+m_sort m_sort
+end type
+global type m_dw from menu
+m_text m_text
+end type
+end forward
+
+global type m_dw from menu
+m_text m_text
+end type
+global m_dw m_dw
+
+type variables
+datawindow idw_parent
+//window iw_mainwindow
+
+end variables
+
+forward prototypes
+public function integer uf_setdw (datawindow ldw, string ls_flags)
+end prototypes
+
+public function integer uf_setdw (datawindow ldw, string ls_flags);window iw_parent
+powerobject lpo
+
+idw_parent=ldw
+lpo=ldw
+//查找所属窗口
+do 
+	lpo=lpo.getparent()
+loop until typeof(lpo)=window!
+iw_parent=lpo
+
+if iw_parent.windowtype=response! then 
+	
+else
+	if isvalid(iw_parent.parentwindow()) then //parentwindow有可能不是窗口
+		lpo=iw_parent.parentwindow()
+		do while typeof(lpo)<>window! 
+			lpo=lpo.getparent()
+		loop
+		iw_parent=lpo
+	end if
+end if
+
+if ls_flags='text' then 
+	m_text.m_paste.enabled=(clipboard()<>'')
+	m_text.m_querymode.checked=(ldw.describe('datawindow.querymode')='yes')
+	m_text.PopMenu (iw_parent.pointerX(),iw_parent.pointerY() )
+end if
+
+return 0
+end function
+
+on m_dw.create
+m_dw=this
+call super::create
+this.text = "m_dw"
+this.menustyle = contemporarymenu!
+this.menutextcolor = 134217735
+this.menubackcolor = 134217732
+this.menuhighlightcolor = 134217741
+this.textsize = 8
+this.weight = 400
+this.facename = "Tahoma"
+this.titlebackcolor = 134217730
+this.bitmapbackcolor = 12632256
+this.menubitmaps = true
+this.titlegradient = true
+this.toolbartextcolor = 134217746
+this.toolbarbackcolor = 67108864
+this.toolbarhighlightcolor = 134217741
+this.toolbargradient = true
+this.bitmapgradient = true
+this.m_text=create m_text
+this.Item[UpperBound(this.Item)+1]=this.m_text
+end on
+
+on m_dw.destroy
+call super::destroy
+destroy(this.m_text)
+end on
+
+type m_text from menu within m_dw
+m_剪切t m_剪切t
+m_0 m_0
+m_paste m_paste
+m_1 m_1
+m_导入 m_导入
+m_导出 m_导出
+m_2 m_2
+m_querymode m_querymode
+m_sort m_sort
+end type
+
+on m_text.create
+call super::create
+this.text = "文本"
+this.mergeoption = editmenu!
+this.menuitemtype = menuitemtypeabout!
+this.menustyle = contemporarymenu!
+this.menutextcolor = 134217735
+this.menubackcolor = 134217732
+this.menuhighlightcolor = 134217741
+this.textsize = 8
+this.weight = 400
+this.facename = "Tahoma"
+this.titlebackcolor = 134217730
+this.bitmapbackcolor = 12632256
+this.menubitmaps = true
+this.titlegradient = true
+this.toolbartextcolor = 134217746
+this.toolbarbackcolor = 67108864
+this.toolbarhighlightcolor = 134217741
+this.toolbargradient = true
+this.bitmapgradient = true
+this.m_剪切t=create m_剪切t
+this.m_0=create m_0
+this.m_paste=create m_paste
+this.m_1=create m_1
+this.m_导入=create m_导入
+this.m_导出=create m_导出
+this.m_2=create m_2
+this.m_querymode=create m_querymode
+this.m_sort=create m_sort
+this.Item[UpperBound(this.Item)+1]=this.m_剪切t
+this.Item[UpperBound(this.Item)+1]=this.m_0
+this.Item[UpperBound(this.Item)+1]=this.m_paste
+this.Item[UpperBound(this.Item)+1]=this.m_1
+this.Item[UpperBound(this.Item)+1]=this.m_导入
+this.Item[UpperBound(this.Item)+1]=this.m_导出
+this.Item[UpperBound(this.Item)+1]=this.m_2
+this.Item[UpperBound(this.Item)+1]=this.m_querymode
+this.Item[UpperBound(this.Item)+1]=this.m_sort
+end on
+
+on m_text.destroy
+call super::destroy
+destroy(this.m_剪切t)
+destroy(this.m_0)
+destroy(this.m_paste)
+destroy(this.m_1)
+destroy(this.m_导入)
+destroy(this.m_导出)
+destroy(this.m_2)
+destroy(this.m_querymode)
+destroy(this.m_sort)
+end on
+
+type m_剪切t from menucascade within m_text
+end type
+
+event clicked;idw_parent.cut()
+end event
+
+on m_剪切t.create
+call super::create
+this.text = "剪切(&T)~tCtrl+X"
+this.shortcut = 344
+this.menuimage = "Cut!"
+this.menustyle = contemporarymenu!
+this.menutextcolor = 134217735
+this.menubackcolor = 134217732
+this.menuhighlightcolor = 134217741
+this.textsize = 8
+this.weight = 400
+this.facename = "Tahoma"
+this.titlebackcolor = 134217730
+this.bitmapbackcolor = 12632256
+this.menubitmaps = true
+this.titlegradient = true
+this.toolbartextcolor = 134217746
+this.toolbarbackcolor = 67108864
+this.toolbarhighlightcolor = 134217741
+this.toolbargradient = true
+this.bitmapgradient = true
+end on
+
+on m_剪切t.destroy
+call super::destroy
+end on
+
+type m_0 from menu within m_text
+end type
+
+on m_0.create
+call super::create
+this.text = "复制(&C)~tCtrl+C"
+this.shortcut = 323
+this.menuimage = "Copy!"
+this.menustyle = contemporarymenu!
+this.menutextcolor = 134217735
+this.menubackcolor = 134217732
+this.menuhighlightcolor = 134217741
+this.textsize = 8
+this.weight = 400
+this.facename = "Tahoma"
+this.titlebackcolor = 134217730
+this.bitmapbackcolor = 12632256
+this.menubitmaps = true
+this.titlegradient = true
+this.toolbartextcolor = 134217746
+this.toolbarbackcolor = 67108864
+this.toolbarhighlightcolor = 134217741
+this.toolbargradient = true
+this.bitmapgradient = true
+end on
+
+on m_0.destroy
+call super::destroy
+end on
+
+event clicked;idw_parent.event dynamic keydown(keyC!,2)
+end event
+
+type m_paste from menu within m_text
+end type
+
+on m_paste.create
+call super::create
+this.text = "粘贴(&P)~tCtrl+V"
+this.shortcut = 342
+this.menuimage = "Paste!"
+this.menustyle = contemporarymenu!
+this.menutextcolor = 134217735
+this.menubackcolor = 134217732
+this.menuhighlightcolor = 134217741
+this.textsize = 8
+this.weight = 400
+this.facename = "Tahoma"
+this.titlebackcolor = 134217730
+this.bitmapbackcolor = 12632256
+this.menubitmaps = true
+this.titlegradient = true
+this.toolbartextcolor = 134217746
+this.toolbarbackcolor = 67108864
+this.toolbarhighlightcolor = 134217741
+this.toolbargradient = true
+this.bitmapgradient = true
+end on
+
+on m_paste.destroy
+call super::destroy
+end on
+
+event clicked;idw_parent.Paste ( )
+end event
+
+type m_1 from menu within m_text
+end type
+
+on m_1.create
+call super::create
+this.text = "-"
+this.menustyle = contemporarymenu!
+this.menutextcolor = 134217735
+this.menubackcolor = 134217732
+this.menuhighlightcolor = 134217741
+this.textsize = 8
+this.weight = 400
+this.facename = "Tahoma"
+this.titlebackcolor = 134217730
+this.bitmapbackcolor = 12632256
+this.menubitmaps = true
+this.titlegradient = true
+this.toolbartextcolor = 134217746
+this.toolbarbackcolor = 67108864
+this.toolbarhighlightcolor = 134217741
+this.toolbargradient = true
+this.bitmapgradient = true
+end on
+
+on m_1.destroy
+call super::destroy
+end on
+
+type m_导入 from menu within m_text
+end type
+
+on m_导入.create
+call super::create
+this.text = "模拟输入(&I)~tCtrl+I"
+this.shortcut = 329
+this.menuimage = "Import5!"
+this.menustyle = contemporarymenu!
+this.menutextcolor = 134217735
+this.menubackcolor = 134217732
+this.menuhighlightcolor = 134217741
+this.textsize = 8
+this.weight = 400
+this.facename = "Tahoma"
+this.titlebackcolor = 134217730
+this.bitmapbackcolor = 12632256
+this.menubitmaps = true
+this.titlegradient = true
+this.toolbartextcolor = 134217746
+this.toolbarbackcolor = 67108864
+this.toolbarhighlightcolor = 134217741
+this.toolbargradient = true
+this.bitmapgradient = true
+end on
+
+on m_导入.destroy
+call super::destroy
+end on
+
+event clicked;idw_parent.event dynamic keydown(keyI!,2)
+end event
+
+type m_导出 from menu within m_text
+end type
+
+on m_导出.create
+call super::create
+this.text = "导出(&O)~tCtrl+O"
+this.shortcut = 335
+this.menuimage = "Export5!"
+this.menustyle = contemporarymenu!
+this.menutextcolor = 134217735
+this.menubackcolor = 134217732
+this.menuhighlightcolor = 134217741
+this.textsize = 8
+this.weight = 400
+this.facename = "Tahoma"
+this.titlebackcolor = 134217730
+this.bitmapbackcolor = 12632256
+this.menubitmaps = true
+this.titlegradient = true
+this.toolbartextcolor = 134217746
+this.toolbarbackcolor = 67108864
+this.toolbarhighlightcolor = 134217741
+this.toolbargradient = true
+this.bitmapgradient = true
+end on
+
+on m_导出.destroy
+call super::destroy
+end on
+
+event clicked;idw_parent.event dynamic keydown(keyO!,2)
+end event
+
+type m_2 from menu within m_text
+end type
+
+on m_2.create
+call super::create
+this.text = "-"
+this.menustyle = contemporarymenu!
+this.menutextcolor = 134217735
+this.menubackcolor = 134217732
+this.menuhighlightcolor = 134217741
+this.textsize = 8
+this.weight = 400
+this.facename = "Tahoma"
+this.titlebackcolor = 134217730
+this.bitmapbackcolor = 12632256
+this.menubitmaps = true
+this.titlegradient = true
+this.toolbartextcolor = 134217746
+this.toolbarbackcolor = 67108864
+this.toolbarhighlightcolor = 134217741
+this.toolbargradient = true
+this.bitmapgradient = true
+end on
+
+on m_2.destroy
+call super::destroy
+end on
+
+type m_querymode from menu within m_text
+end type
+
+event clicked;idw_parent.event dynamic keydown(keyQ!,2)
+end event
+
+on m_querymode.create
+call super::create
+this.text = "查询模式(&Q)~tCtrl+Q"
+this.shortcut = 337
+this.toolbaritemdown = true
+this.mergeoption = windowmenu!
+this.menuitemtype = menuitemtypeabout!
+this.menustyle = contemporarymenu!
+this.menutextcolor = 134217735
+this.menubackcolor = 134217732
+this.menuhighlightcolor = 134217741
+this.textsize = 8
+this.weight = 400
+this.facename = "Tahoma"
+this.titlebackcolor = 134217730
+this.bitmapbackcolor = 12632256
+this.menubitmaps = true
+this.titlegradient = true
+this.toolbartextcolor = 134217746
+this.toolbarbackcolor = 67108864
+this.toolbarhighlightcolor = 134217741
+this.toolbargradient = true
+this.bitmapgradient = true
+end on
+
+on m_querymode.destroy
+call super::destroy
+end on
+
+type m_sort from menu within m_text
+end type
+
+on m_sort.create
+call super::create
+this.text = "高级排序(&Y)~tCtrl+Y"
+this.shortcut = 345
+this.menuimage = "Sort!"
+this.menustyle = contemporarymenu!
+this.menutextcolor = 134217735
+this.menubackcolor = 134217732
+this.menuhighlightcolor = 134217741
+this.textsize = 8
+this.weight = 400
+this.facename = "Tahoma"
+this.titlebackcolor = 134217730
+this.bitmapbackcolor = 12632256
+this.menubitmaps = true
+this.titlegradient = true
+this.toolbartextcolor = 134217746
+this.toolbarbackcolor = 67108864
+this.toolbarhighlightcolor = 134217741
+this.toolbargradient = true
+this.bitmapgradient = true
+end on
+
+on m_sort.destroy
+call super::destroy
+end on
+
+event clicked;window lw
+openwithparm(lw,idw_parent,'w_sort')
+end event
+

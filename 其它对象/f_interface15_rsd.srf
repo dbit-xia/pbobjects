@@ -1,0 +1,21 @@
+$PBExportHeader$f_interface15_rsd.srf
+global type f_interface15_rsd from function_object
+end type
+
+forward prototypes
+global function string f_interface15_rsd (transaction l_sqlca, string l_content, string l_content2)
+end prototypes
+
+global function string f_interface15_rsd (transaction l_sqlca, string l_content, string l_content2);string ls_ret,ls_function='f_rsd'
+function_object lfo_rsd
+if isvalid(lfo_rsd)=false then 
+	if not isnull(FindClassDefinition(ls_function)) then //ÊÇ·ñ´æÔÚº¯Êý 
+		lfo_rsd=create using ls_function
+		ls_ret=lfo_rsd.dynamic f_rsd(l_sqlca,l_content,l_content2)
+		if isvalid(lfo_rsd) then destroy lfo_rsd
+	end if
+end if
+return ls_ret
+	
+end function
+

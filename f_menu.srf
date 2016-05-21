@@ -1,0 +1,30 @@
+$PBExportHeader$f_menu.srf
+global type f_menu from function_object
+end type
+
+forward prototypes
+global subroutine f_menu (ref menu lmenu)
+end prototypes
+
+global subroutine f_menu (ref menu lmenu);string ls_menuid
+string ls_text
+int li_index,li_count,li_pointpos
+long l_itemcount
+menu lmenuitem 
+
+l_itemcount=upperbound(lmenu.item[])
+
+for li_index=1 to l_itemcount 
+	lmenuitem=lmenu.item[li_index]
+	f_menu(lmenuitem)
+	ls_text=lmenuitem.text
+	li_pointpos=pos(ls_text,'.')
+	ls_menuid=left(ls_text,li_pointpos - 2) + '&'  //最后一位前加 & 实现快捷键
+	ls_text=string(ls_menuid)+mid(ls_text,li_pointpos - 1)
+	lmenuitem.text=ls_text
+	lmenuitem.toolbaritemtext=ls_text //工具栏文本
+	lmenuitem.microhelp=ls_text //工具栏微帮助
+	lmenuitem.toolbaritemname=lmenuitem.menuimage //显示图标
+next
+end subroutine
+

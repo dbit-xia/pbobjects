@@ -1,0 +1,19 @@
+$PBExportHeader$f_derek_getposwindow.srf
+global type f_derek_getposwindow from function_object
+end type
+
+forward prototypes
+global function window f_derek_getposwindow (powerobject lpo)
+end prototypes
+
+global function window f_derek_getposwindow (powerobject lpo);powerobject lpo_parent
+
+lpo_parent=lpo
+//≤È’“À˘ Ù¥∞ø⁄
+do while (typeof(lpo_parent)<>window!)
+	lpo_parent=lpo_parent.getparent()
+loop 
+
+return lpo_parent
+end function
+

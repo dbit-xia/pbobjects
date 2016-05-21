@@ -1,0 +1,73 @@
+$PBExportHeader$f_execute.srf
+global type f_execute from function_object
+end type
+
+forward prototypes
+global function integer f_execute (string ls_sql)
+global function integer f_execute (string ls_sql,transaction ltrans)
+global function integer f_execute (string ls_sql,boolean lb_autocommit)
+global function integer f_execute (string ls_sql,boolean lb_autocommit,transaction ltrans)
+global function string f_execute(string as_sql, any a_parm[])
+end prototypes
+
+global function integer f_execute (string ls_sql);if isnull(ls_sql) then ls_sql='' //防止NULL执行崩溃
+execute immediate :ls_sql;
+return f_sqlcode()
+end function
+
+global function integer f_execute (string ls_sql,transaction ltrans);if isnull(ls_sql) then ls_sql='' //防止NULL执行崩溃
+execute immediate :ls_sql using ltrans;
+return ltrans.sqlcode
+end function
+
+global function integer f_execute (string ls_sql,boolean lb_autocommit);
+return f_execute(ls_sql,lb_autocommit,sqlca)
+end function
+
+global function integer f_execute (string ls_sql,boolean lb_autocommit,transaction ltrans);
+boolean lb_autocommit_old
+int li_sqlcode
+lb_autocommit_old=ltrans.autocommit
+if lb_autocommit_old<>lb_autocommit then 
+	ltrans.autocommit=lb_autocommit
+end if
+
+if isnull(ls_sql) then ls_sql='' //防止NULL执行崩溃
+execute immediate :ls_sql using ltrans;
+li_sqlcode=f_sqlcode(ltrans)
+
+if lb_autocommit_old<>lb_autocommit then 
+	ltrans.autocommit=lb_autocommit_old
+end if
+
+return li_sqlcode
+end function
+
+global function string f_execute(string as_sql, any a_parm[]);int i,li_parmcount
+string ls_errtext
+
+PREPARE SQLSA FROM :as_sql; 
+DESCRIBE SQLSA INTO SQLDA; 
+
+//若DESCRIBE成功，则输入描述符数组将包含一个输入描述符， 
+//在打开游标前必须先给输入描述符赋值。 
+
+li_parmcount=upperbound(a_Parm[])
+
+for i=1 to li_parmcount
+	if SetDynamicParm(SQLDA,i,a_Parm[i])<>1 then 
+		ls_errtext+='SetDynamicParm:'+string(i)+'失败!~r~n'
+	end if
+next
+
+DECLARE c1 DYNAMIC cursor FOR SQLSA;
+
+open DYNAMIC c1 USING DESCRIPTOR SQLDA; 
+
+if f_sqlcode()=-1 then ls_errtext=sqlca.sqlerrtext+'~r~n'
+
+CLOSE c1;
+
+return ls_errtext
+end function
+

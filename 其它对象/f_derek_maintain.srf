@@ -1,0 +1,35 @@
+$PBExportHeader$f_derek_maintain.srf
+global type f_derek_maintain from function_object
+end type
+
+forward prototypes
+global function string f_derek_maintain (string l_field, string l_flags, ref decimal ld_refvalue, ref string ls_refvalue)
+end prototypes
+
+global function string f_derek_maintain (string l_field, string l_flags, ref decimal ld_refvalue, ref string ls_refvalue);//取最新系统变量
+
+string ls_strings,ls_ret
+
+ld_refvalue=0
+ls_refvalue=''
+
+select isnull(max(decimals),0),isnull(max(strings),'') into :ld_refvalue,:ls_strings
+from maintain
+where enames=:l_field;
+
+if sqlca.sqlcode=-1 then goto e
+
+if l_flags<>'' then 
+	ls_refvalue=f_maintain_s(ls_strings,l_flags,'')
+else
+	ls_refvalue=ls_strings
+end if
+
+return ''
+
+e:
+return sqlca.sqlerrtext
+
+
+end function
+

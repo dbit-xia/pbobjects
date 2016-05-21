@@ -1,0 +1,25 @@
+$PBExportHeader$f_runsa_derek_execddl.srf
+$PBExportComments$DDL_SQLÖ´ÐÐ
+global type f_runsa_derek_execddl from function_object
+end type
+
+forward prototypes
+global function integer f_runsa_derek_execddl (readonly string as_sql)
+end prototypes
+
+global function integer f_runsa_derek_execddl (readonly string as_sql);int li_ret=0
+boolean lb_commit
+
+lb_commit=sqlca.autocommit
+
+sqlca.autocommit=true
+
+execute immediate :as_sql;
+
+sqlca.autocommit=lb_commit
+
+if sqlca.sqlcode=-1 then li_ret=-1
+
+return li_ret
+end function
+

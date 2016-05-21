@@ -1,0 +1,104 @@
+$PBExportHeader$f_runsa_derek_replaceex.srf
+global type f_runsa_derek_replaceex from function_object
+end type
+
+forward prototypes
+global function integer f_runsa_derek_replaceex (ref string ls_text, character as_str1[], character as_str2[])
+end prototypes
+
+global function integer f_runsa_derek_replaceex (ref string ls_text, character as_str1[], character as_str2[]);//字符串替换函数
+//参数1:引用变量,操作的字符串
+//参数2:要替换的字符
+//参数3:目标字符
+//返回值:替换成功的数目
+
+long li_pos,i,l_len,l_index
+int li_len1,li_len2,li_matchindex=1 /*查找位置*/
+char lc_char[]
+li_len1=upperbound(as_str1[])
+li_len2=upperbound(as_str2[])
+
+if li_len1=li_len2 then //等长,则使用char[]查找法
+	lc_char[]=ls_text
+	l_len=upperbound(lc_char[])
+	li_matchindex=1
+	if as_str1[]=as_str2[] then //字符串相等,则只查找个数
+		for l_index=1 to l_len
+			if lc_char[l_index]=as_str1[li_matchindex] then 
+				if li_len1=li_matchindex then 
+					i++
+				else
+					li_matchindex++
+					continue;
+				end if
+			end if 
+			if li_matchindex>1 then l_index=l_index - li_matchindex + 1
+			li_matchindex=1
+		next
+	else //替换
+		for l_index=1 to l_len
+			if lc_char[l_index]=as_str1[li_matchindex] then 
+				if li_len1=li_matchindex then 
+					for li_matchindex=li_matchindex - 1 to 0 step -1
+						lc_char[l_index - li_matchindex]=as_str2[li_len1 - li_matchindex]
+					next
+					i++
+				else
+					li_matchindex++
+					continue;
+				end if
+			end if 
+			if li_matchindex>1 then l_index=l_index - li_matchindex + 1
+			li_matchindex=1
+		next
+		ls_text=lc_char[] //保存替换结果
+	end if
+	
+else //非等长替换,效率低
+	li_pos=Pos(ls_text,as_str1,1)
+	//替换
+	do while(li_pos>0)
+		i++
+		ls_text=Replace(ls_text,li_pos,li_len1,as_str2)
+		li_pos=Pos(ls_text,as_str1,li_pos + li_len2 )
+	loop
+end if
+
+
+////如果是一个字符,则使用char数组进行查找/替换
+//if li_len1=1 and li_len2=1 then 
+//	lc_char[]=ls_text
+//	l_len=upperbound(lc_char[])
+//	if as_str1=as_str2 then //不是替换,而是查找个数
+//		for l_index=1 to l_len
+//			if lc_char[l_index]=as_str1[l_index] then i++
+//		next
+//	else	//替换
+//		for l_index=1 to l_len
+//			if lc_char[l_index]=as_str1 then 
+//				i++
+//				lc_char[l_index]=as_str2
+//			end if
+//		next
+//		ls_text=lc_char[]
+//	end if
+//	
+//else
+//	li_pos=Pos(ls_text,as_str1,1)
+//	if as_str1=as_str2 then //不是替换,而是查找个数
+//		do while(li_pos>0)
+//			i++
+//			li_pos=Pos(ls_text,as_str1,li_pos + li_len2  )
+//		loop
+//	else	//替换
+//		do while(li_pos>0)
+//			i++
+//			ls_text=Replace(ls_text,li_pos,li_len1,as_str2)
+//			li_pos=Pos(ls_text,as_str1,li_pos + li_len2 )
+//		loop
+//	end if
+//end if
+//messagebox('',i)
+return i
+end function
+

@@ -1,0 +1,35 @@
+$PBExportHeader$f_derek_dec2hex.srf
+global type f_derek_dec2hex from function_object
+end type
+
+forward prototypes
+global function string f_derek_dec2hex (decimal ad_dec, unsignedinteger ai_sys)
+end prototypes
+
+global function string f_derek_dec2hex (decimal ad_dec, unsignedinteger ai_sys);//作用:将十进制数字转成其它进制字符串
+//参数1:十进制数字
+//参数2:目标进制
+string ls_ret	//返回的结果
+dec ld_mod
+if isnull(ad_dec) or isnull(ai_sys) or ai_sys<2 then goto e
+if ad_dec<ai_sys then	//大于10进制
+	if ad_dec<10 then
+		ls_ret=string(ad_dec)
+		goto e
+	elseif ad_dec>=10 and ad_dec<ai_sys then
+		ls_ret=char(64 - 9 + ad_dec)		//大于9的数字为转换为字母
+		goto e
+	end if
+else
+	do
+		ld_mod=mod(ad_dec,ai_sys)
+		ls_ret=f_derek_dec2hex(ld_mod,ai_sys)+ls_ret
+		ad_dec=(ad_dec - ld_mod) / ai_sys 		//
+	loop until ad_dec<ai_sys
+	ls_ret=string(ad_dec)+ls_ret
+end if
+
+e:
+return ls_ret
+end function
+

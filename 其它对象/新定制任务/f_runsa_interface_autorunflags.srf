@@ -1,0 +1,29 @@
+$PBExportHeader$f_runsa_interface_autorunflags.srf
+global type f_runsa_interface_autorunflags from function_object
+end type
+
+forward prototypes
+global function string f_runsa_interface_autorunflags (string ls_flags)
+end prototypes
+
+global function string f_runsa_interface_autorunflags (string ls_flags);// /*0121*/
+//   string ls_flags,ls_flags0
+//   ls_flags=f_zg_sout('autorunflags,;','')
+//   ls_flags0=dw_1.describe('flags.values')
+//   if len(ls_flags)>2 then
+//    dw_1.modify('flags.values="'+ls_flags0 + ls_flags+'"')
+//   end if
+//   /**/
+
+string ls_ret
+//ls_ret="店仓资料	301/颜色资料	302/产品资料	303/产品条码	304/产品多条码	305/配码资料	306/价格下载	307/"+&
+//"店家补货申请上传	308/仓出店下载	309/仓出店确认上传	310/店退仓上传	311/店退仓下载	312/店铺转出上传	313/"+&
+//"销售单上传	314/调整单上传	315/"
+
+ls_ret="积分卡(102)	102/WMS接口(108)	108/WMS库存接口(107)	107/"
+
+return ls_ret
+
+
+end function
+

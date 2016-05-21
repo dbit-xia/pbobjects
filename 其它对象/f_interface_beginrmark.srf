@@ -1,0 +1,42 @@
+$PBExportHeader$f_interface_beginrmark.srf
+global type f_interface_beginrmark from function_object
+end type
+
+forward prototypes
+global function string f_interface_beginrmark (string ls_flags)
+end prototypes
+
+global function string f_interface_beginrmark (string ls_flags);//if f_zg_sout('beginrmark,tablename='+l_tablename+',nos='+l_nos+',flags='+string(l_flags)+',;','nocommit')='-1' then goto e//trunf,//rt
+
+string ls_tablename,ls_nos,ls_flags0,ls_ret='1'
+string ls_errtext
+boolean lb_wait
+int li_rmark,li_gzdiff
+int li_kinds11
+//u_runsa_derek_consign lu_consign
+
+ls_flags0=ls_flags
+
+lb_wait=isvalid(w_wait)
+
+//<0 为反过账,>0 为过账
+li_rmark=integer(f_maintain_s(ls_flags,'flags=',','))
+li_gzdiff=integer(f_maintain_s(ls_flags,'gzdiff=',','))
+
+if li_rmark<0 then goto m
+
+if li_gzdiff=1 then goto m
+
+//同步时不判断单据类型
+if isvalid(w_stainfo_communication) then goto m
+
+//lu_consign=create u_runsa_derek_consign
+//ls_ret=lu_consign.uf_beginrmark(ls_flags0)
+//destroy lu_consign
+
+m:
+return ls_ret
+
+
+end function
+

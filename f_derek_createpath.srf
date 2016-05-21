@@ -1,0 +1,47 @@
+$PBExportHeader$f_derek_createpath.srf
+$PBExportComments$创建指定路径
+global type f_derek_createpath from function_object
+end type
+
+forward prototypes
+global function string f_derek_createpath (string as_filepath)
+end prototypes
+
+global function string f_derek_createpath (string as_filepath);//作用:创建路径
+//参数:路径
+//返回值:成功返回空字符串,失败返回创建失败的路径,参数为null或''则返回''
+//说明:
+//1.以'\'结尾则创建路径中所有文件夹,否则创建所有文件夹及一个文件
+//2.以'\'开头,则在当前磁盘根目录下创建
+//3.可以指定绝对路径(C:\1\2\3.txt)
+//4.可以指定相对路径(.\1\2\3.txt)
+
+
+string ls_dir
+long l_hwd
+int li_pos=0
+as_filepath=trim(as_filepath)
+if isnull(as_filepath) or as_filepath='' then return ''
+
+if mid(as_filepath,2,1)=':' then li_pos=3	//绝对路径
+
+do
+	li_pos=pos(as_filepath,'\',li_pos + 1)
+	if li_pos=0 then exit;
+	ls_dir=mid(as_filepath,1,li_pos - 1)
+	if directoryexists(ls_dir)=false then 
+		if createdirectory(ls_dir)=-1 then return ls_dir
+	end if
+loop until li_pos=0
+
+if left(as_filepath,1)<>'\' then 
+	if fileexists(as_filepath)=false then
+		l_hwd=fileopen(as_filepath,Linemode!,Write!,LockWrite!,Append!)
+		fileclose(l_hwd)
+		if l_hwd=-1 then return as_filepath
+	end if
+end if
+
+return ''
+end function
+

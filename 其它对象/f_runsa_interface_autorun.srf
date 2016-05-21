@@ -1,0 +1,108 @@
+$PBExportHeader$f_runsa_interface_autorun.srf
+global type f_runsa_interface_autorun from function_object
+end type
+
+forward prototypes
+global function string f_runsa_interface_autorun (string ls_flags)
+end prototypes
+
+global function string f_runsa_interface_autorun (string ls_flags);//设置间隔时间,自动运行
+
+string ls_now,ls_errtext
+long l_count,l_infaceid_check[],i,l_infacecount
+long l_times0
+long l_infaceid[]={101,102,103}
+datetime l_time_s,l_time_e
+
+string ls_sql,ls_ret
+int li_day
+string ls_infacestr,ls_infaceid[]
+u_derek_v2_dd lu_dd
+lu_dd=create u_derek_v2_dd
+
+//u_derek_triumph_pmmasc lu_pmmasc
+
+ls_now=string(today(),'hh:mm:ss')
+li_day=day(today())
+
+l_infacecount=upperbound(l_infaceid[])
+//数字数组转字符数组
+for i=1 to l_infacecount
+	ls_infaceid[i]=string(l_infaceid[i])
+next
+
+ls_infacestr=lu_dd.getstr(ls_infaceid[],',',0)
+
+//检测接口表
+select count(1) into :l_count
+from (select a=1) tmp
+where object_id('interface_autorun')>0;
+
+if sqlca.sqlcode=-1 then goto e
+
+if l_count=0 then 
+	ls_errtext='interface_autorun表未找到,请尝试设置变量{SUE=1;}并进行数据库简易升级!'
+	messagebox('',ls_errtext)
+	goto e
+end if
+
+ls_sql="select infaceid=t1.flags &
+		from wgz_autosyn_time t1 left join interface_autorun t2 on t2.tasktype=t1.flags &
+		where t1.flags in ("+ls_infacestr+") &
+			and (isnull(t1.days,'')='' or charindex(',"+string(li_day)+",' , ','+t1.days+',')>0) &
+			and '"+ls_now+"' between convert(char(8),t1.time_s,108) and convert(char(8),t1.time_e,108) &
+			and datediff(ss,isnull(t2.tasktime,'2000-01-01'),getdate())>=t1.times "
+
+ls_ret=lu_dd.getquery(lu_dd.ids_temp,ls_sql)
+if ls_ret<>'' then 
+	ls_errtext=ls_ret
+	goto e
+end if
+
+lu_dd.ids_temp.settransobject(sqlca)
+l_infacecount=lu_dd.ids_temp.retrieve()
+if l_infacecount=0 then goto m
+if l_infacecount<=-1 then
+	ls_errtext='runsaautorun retrieve 失败!'
+	goto e
+end if
+
+//
+l_infaceid_check[]=lu_dd.ids_temp.object.infaceid.current
+
+//统一运行
+l_infacecount=upperbound(l_infaceid_check[])
+
+for i=1 to l_infacecount
+	
+	//记录本次运行时间
+	insert into interface_autorun(tasktype,tasktime,yhid) 
+	select :l_infaceid_check[i],getdate(),:personcode where not exists(select 1 from interface_autorun where tasktype=:l_infaceid_check[i]);
+	f_sqlca_check('')
+	commit;
+	
+	update interface_autorun set tasktime=getdate(),yhid=:personcode where  tasktype=:l_infaceid_check[i];
+	f_sqlca_check('')
+	commit;
+	
+	choose case l_infaceid_check[i]
+		case 101 //清积分,延期,降级
+		//	lu_pmmasc=create u_derek_triumph_pmmasc
+		//	ls_ret=lu_pmmasc.uf_pmexpiry()
+		//	destroy lu_pmmasc
+	end choose
+	
+next
+
+goto m
+m:
+if isvalid(lu_dd) then destroy lu_dd
+return '1'
+
+goto e
+e:
+if isvalid(lu_dd) then destroy lu_dd
+if ls_errtext<>'' then f_messagebox('',ls_errtext,0,0)
+return '1'
+end function
+

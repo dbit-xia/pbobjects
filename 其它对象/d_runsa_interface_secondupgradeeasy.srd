@@ -1,0 +1,204 @@
+$PBExportHeader$d_sout_interface_secondupgradeeasy.srd
+$PBExportComments$货位数据库简易升级文件
+release 12;
+datawindow(units=0 timer_interval=0 color=1073741824 brushmode=0 transparency=0 gradient.angle=0 gradient.color=8421504 gradient.focus=0 gradient.repetition.count=0 gradient.repetition.length=100 gradient.repetition.mode=0 gradient.scale=100 gradient.spread=100 gradient.transparency=0 picture.blur=0 picture.clip.bottom=0 picture.clip.left=0 picture.clip.right=0 picture.clip.top=0 picture.mode=0 picture.scale.x=100 picture.scale.y=100 picture.transparency=0 processing=0 HTMLDW=no print.printername="" print.documentname="" print.orientation = 0 print.margin.left = 0 print.margin.right = 0 print.margin.top = 0 print.margin.bottom = 0 print.paper.source = 0 print.paper.size = 0 print.canusedefaultprinter=yes print.prompt=no print.buttons=no print.preview.buttons=no print.cliptext=no print.overrideprintjob=no print.collate=no print.background=no print.preview.background=no print.preview.outline=no hidegrayline=no showbackcoloronxp=no picture.file="" )
+header(height=0 color="536870912" transparency="0" gradient.color="8421504" gradient.transparency="0" gradient.angle="0" brushmode="0" gradient.repetition.mode="0" gradient.repetition.count="0" gradient.repetition.length="100" gradient.focus="0" gradient.scale="100" gradient.spread="100" )
+summary(height=0 color="536870912" transparency="0" gradient.color="8421504" gradient.transparency="0" gradient.angle="0" brushmode="0" gradient.repetition.mode="0" gradient.repetition.count="0" gradient.repetition.length="100" gradient.focus="0" gradient.scale="100" gradient.spread="100" )
+footer(height=0 color="536870912" transparency="0" gradient.color="8421504" gradient.transparency="0" gradient.angle="0" brushmode="0" gradient.repetition.mode="0" gradient.repetition.count="0" gradient.repetition.length="100" gradient.focus="0" gradient.scale="100" gradient.spread="100" )
+detail(height=0 color="536870912" transparency="0" gradient.color="8421504" gradient.transparency="0" gradient.angle="0" brushmode="0" gradient.repetition.mode="0" gradient.repetition.count="0" gradient.repetition.length="100" gradient.focus="0" gradient.scale="100" gradient.spread="100" )
+table(retrieve="
+create table interface_autorun
+(
+	tasktype int default 0 not null,
+	tasktime datetime null,
+	bz varchar(60) null,
+	bz1 varchar(100) null,
+	bz2 varchar(100) null,
+	gxrq datetime null,
+	yhid varchar(10) null
+)
+GO
+create unique index i_interface_autorun on interface_autorun(tasktype)
+GO
+create table runsa_dbconlist
+(
+	recno int default @@spid not null,
+	remote_recno int not null,
+	remote_db varchar(50) not null,
+	areacode varchar(10) not null,
+	yhid varchar(50) null,
+	hostname varchar(50) null,
+	login_time datetime null
+)
+GO
+create unique index i_dbconlist_key on runsa_dbconlist(recno)
+GO
+create unique index i_dbconlist_remote_db on runsa_dbconlist(remote_db)
+GO
+create table trunf_out_r (
+	id numeric identity,
+	auxkey	varchar(50) null,
+	wmsno varchar(20) null,
+	areacode varchar(20) null,
+	types int null,
+	nos varchar(20) null,
+	outcusno  varchar(20) null,
+	incusno   varchar(20) null,
+	outdate   varchar(8)  null,
+	nbs int null,
+	now decimal(20,4) null,
+	zdr varchar(10) null,
+	bz varchar(100) null,
+	transcorp  varchar(20) null,
+	movenos   varchar(30) null,
+	dtcount   int null,
+	status   int default 0 null,
+	uploadtime datetime   default getdate() null,
+	downtime  datetime   null,
+	lastmsg   varchar(100) null,
+	bz1 varchar(100) null,
+	bz2 varchar(100) null,
+	bz3 varchar(100) null,
+	bz4 varchar(100) null,
+	bz5 varchar(100) null,
+	bz6 varchar(100) null,
+	bz7 varchar(100) null,
+	bz8 varchar(100) null,
+	bz9 varchar(100) null,
+	bz10 varchar(100) null
+)
+GO
+EXEC sp_chgattribute trunf_out_r,'identity_gap',1
+GO
+create index i_trunf_out_r_key on trunf_out_r (
+nos ASC
+)
+GO
+create index i_trunf_out_r_auxkey on trunf_out_r(auxkey desc)
+GO
+create table trunfb_out_r (
+  id numeric identity,
+  parentid  numeric null,
+  auxkey	varchar(50) null,
+  nos varchar(20) not null,
+  outcusno  varchar(20) null,
+  nos_rec   varchar(10) null,
+  xh varchar(30) null,
+  xhnb int null,
+  colthno   varchar(30) null,
+  color varchar(20) null,
+  sizes varchar(20) null,
+  price decimal(15,4) null,
+  nb int null,
+  status   int default 0 null,
+  uploadtime datetime   default getdate() null,
+  downtime  datetime   null,
+  lastmsg   varchar(100) null,
+  bz1 varchar(100) null,
+  bz2 varchar(100) null,
+  bz3 varchar(100) null,
+  bz4 varchar(100) null,
+  bz5 varchar(100) null,
+  bz6 varchar(100) null,
+  bz7 varchar(100) null,
+  bz8 varchar(100) null,
+  bz9 varchar(100) null,
+  bz10 varchar(100) null,
+  diffbz   varchar(100) null,
+  diffresult varchar(50) null,
+  diffnb	int	null,
+  words	varchar(30)	null
+)
+GO
+EXEC sp_chgattribute trunfb_out_r,'identity_gap',1
+GO
+create index i_trunfb_out_r_nos on trunfb_out_r (
+nos ASC
+)
+GO
+create index i_trunfb_out_r_auxkey on trunfb_out_r(auxkey desc)
+GO
+create table trunf_out_temp (
+	recno	int default @@spid null,
+	id numeric null,
+	auxkey	varchar(50) null,
+	wmsno varchar(20) null,
+	areacode varchar(20) null,
+	types int null,
+	nos varchar(20) null,
+	outcusno  varchar(20) null,
+	incusno   varchar(20) null,
+	outdate   varchar(8)  null,
+	nbs int null,
+	now decimal(20,4) null,
+	zdr varchar(10) null,
+	bz varchar(100) null,
+	transcorp  varchar(20) null,
+	movenos   varchar(30) null,
+	dtcount   int null,
+	status   int default 0 null,
+	uploadtime datetime   default getdate() null,
+	downtime  datetime   null,
+	lastmsg   varchar(100) null,
+	bz1 varchar(100) null,
+	bz2 varchar(100) null,
+	bz3 varchar(100) null,
+	bz4 varchar(100) null,
+	bz5 varchar(100) null,
+	bz6 varchar(100) null,
+	bz7 varchar(100) null,
+	bz8 varchar(100) null,
+	bz9 varchar(100) null,
+	bz10 varchar(100) null
+)
+GO
+create index i_trunf_out_temp_recno on trunf_out_temp(recno)
+GO
+create table trunfb_out_temp (
+	recno	int default @@spid null,
+	id numeric null,
+	parentid  numeric null,
+	auxkey	varchar(50) null,
+	nos varchar(20) not null,
+	outcusno  varchar(20) null,
+	nos_rec   varchar(10) null,
+	xh varchar(30) null,
+	xhnb int null,
+	colthno   varchar(30) null,
+	color varchar(20) null,
+	sizes varchar(20) null,
+	price decimal(15,4) null,
+	nb int null,
+	status   int default 0 null,
+	uploadtime datetime   default getdate() null,
+	downtime  datetime   null,
+	lastmsg   varchar(100) null,
+	bz1 varchar(100) null,
+	bz2 varchar(100) null,
+	bz3 varchar(100) null,
+	bz4 varchar(100) null,
+	bz5 varchar(100) null,
+	bz6 varchar(100) null,
+	bz7 varchar(100) null,
+	bz8 varchar(100) null,
+	bz9 varchar(100) null,
+	bz10 varchar(100) null,
+	diffbz   varchar(100) null,
+	diffresult varchar(50) null,
+	diffnb	int	null,
+	words	varchar(30)	null
+)
+GO
+create index i_trunfb_out_temp_nos on trunfb_out_temp(recno,nos)
+GO
+" )
+htmltable(border="0" )
+htmlgen(clientevents="1" clientvalidation="1" clientcomputedfields="1" clientformatting="0" clientscriptable="0" generatejavascript="1" encodeselflinkargs="1" netscapelayers="0" pagingmethod=0 generatedddwframes="1" )
+xhtmlgen() cssgen(sessionspecific="0" )
+xmlgen(inline="0" )
+xsltgen()
+jsgen()
+export.xml(headgroups="1" includewhitespace="0" metadatatype=0 savemetadata=0 )
+import.xml()
+export.pdf(method=0 distill.custompostscript="0" xslfop.print="0" )
+export.xhtml()

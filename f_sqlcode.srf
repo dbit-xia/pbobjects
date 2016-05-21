@@ -1,0 +1,33 @@
+$PBExportHeader$f_sqlcode.srf
+global type f_sqlcode from function_object
+end type
+
+forward prototypes
+global function integer f_sqlcode ()
+global function integer f_sqlcode (int li_commit)
+global function integer f_sqlcode (string ls_sql)
+end prototypes
+
+global function integer f_sqlcode ();
+if sqlca.sqlcode<>-1 then return sqlca.sqlcode
+//choose case sqlca.sqldbcode
+//	case 2714,1913,2705,13925 ,15248,15225
+//		//创建表已存在,增加索引,增加列已存在,列未修改,删除表/索引列不存在(1911),rename列未找到,rename表不存在
+//		return 0
+//	case else
+		return -1
+//end choose
+end function
+
+global function integer f_sqlcode (int li_commit);
+int li_ret
+if f_sqlcode()=-1 then return -1
+if li_commit=1 then 
+	commit;
+	return sqlca.sqlcode
+end if
+end function
+
+global function integer f_sqlcode (string ls_sql);return f_sqlcode()
+end function
+

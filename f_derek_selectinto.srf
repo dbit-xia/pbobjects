@@ -1,0 +1,61 @@
+$PBExportHeader$f_derek_selectinto.srf
+global type f_derek_selectinto from function_object
+end type
+
+forward prototypes
+global function integer f_derek_selectinto (string as_sql, ref any a_parm[])
+global function integer f_derek_selectinto (string as_sql, ref any a_parm[],transaction ltrans_1)
+end prototypes
+
+global function integer f_derek_selectinto (string as_sql, ref any a_parm[])
+	return f_derek_selectinto(as_sql,a_parm[],sqlca)
+end function;
+
+global function integer f_derek_selectinto (string as_sql, ref any a_parm[],transaction ltrans_1);string Stringvar, Sqlstatement
+integer i,Intvar,li_NumOutputs
+Long LongVar
+
+Sqlstatement = as_sql
+
+PREPARE SQLSA FROM :Sqlstatement using ltrans_1;
+if ltrans_1.sqlcode=-1 then goto e
+DESCRIBE SQLSA INTO SQLDA ;
+if ltrans_1.sqlcode=-1 then goto e
+DECLARE my_cursor DYNAMIC CURSOR FOR SQLSA ;
+if ltrans_1.sqlcode=-1 then goto e
+OPEN DYNAMIC my_cursor USING DESCRIPTOR SQLDA ;
+if ltrans_1.sqlcode=-1 then goto e
+FETCH my_cursor USING DESCRIPTOR SQLDA ;
+if ltrans_1.sqlcode=-1 then goto e
+
+li_NumOutputs=SQLDA.NumOutputs
+
+for i=1 to li_NumOutputs
+	CHOOSE CASE SQLDA.OutParmType[i]
+		CASE TypeString!
+			Stringvar = GetDynamicString(SQLDA, i)
+			a_parm[i]=Stringvar
+		CASE TypeInteger!,TypeLong!,TypeByte!,TypeUInt!,TypeUInt!,TypeULong!
+			Intvar = GetDynamicNumber(SQLDA, i)
+			a_parm[i]=Intvar
+		CASE TypeLongLong!,TypeDecimal!,TypeReal!,TypeDouble!
+			 Longvar = GetDynamicDecimal(SQLDA, i)
+			 a_parm[i]=Longvar
+		case Typedate! 
+			a_parm[i]=GetDynamicDate (SQLDA, i)
+		case typedatetime!
+			a_parm[i]=GetDynamicDateTime (SQLDA, i)
+		case typetime!
+			a_parm[i]=GetDynamicTime(SQLDA, i)
+	END CHOOSE
+next
+
+CLOSE my_cursor ;
+if ltrans_1.sqlcode=-1 then goto e
+
+return li_NumOutputs
+
+e:
+return -1
+end function
+

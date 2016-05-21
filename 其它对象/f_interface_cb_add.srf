@@ -1,0 +1,144 @@
+$PBExportHeader$f_interface_cb_add.srf
+global type f_interface_cb_add from function_object
+end type
+
+forward prototypes
+global function string f_interface_cb_add (string ls_flags)
+end prototypes
+
+global function string f_interface_cb_add (string ls_flags);/*数据窗口保存属性*/
+if not isvalid(gdw_1) then return '1'
+
+string ls_errtext,ls_sql,ls_ret
+boolean lb_wait
+string ls_menuid,ls_title,ls_dwclassname,ls_winclassname
+string ls_cusno,ls_incusno,ls_outcusno,ls_stanos,ls_headtable,ls_nos,ls_bulkflags,ls_midckno,ls_indbno
+long l_getrow,i
+string ls_unique[],ls_value,ls_fieldtitle,ls_chflags
+datawindow ldw
+window lw_parent
+
+lb_wait=isvalid(w_wait)
+
+ldw=gdw_1
+//提取从属window
+lw_parent=f_derek_getposwindow(ldw)
+//取title
+ls_title=lw_parent.title
+ls_winclassname=classname(lw_parent)
+//取菜单号
+ls_menuid=left(ls_title,pos(ls_title,'.'))
+if ls_menuid='' then goto m
+//取当前update的数据窗口名称
+ls_dwclassname=classname(ldw)
+l_getrow=ldw.getrow()
+if l_getrow=0 then goto m
+
+choose case ls_menuid
+	case 'A2C1.','A2C21.','A2C3.','A2C4.','A2F7.'
+		if ls_dwclassname='dw_1' and ls_winclassname='w_trunfp' then
+			ls_headtable='trunfp'
+			ls_nos=ldw.getitemstring(l_getrow,'nos')			
+			ls_stanos=ldw.getitemstring(l_getrow,'stanos')
+			ls_outcusno=ldw.getitemstring(l_getrow,'cusno')
+			ls_incusno=ldw.getitemstring(l_getrow,'inckno')
+			ls_indbno=string(ldw.getitemstring(l_getrow,'indbno'),'')
+			//li_kinds1=integer(ldw.getitemnumber(l_getrow,'kinds1'))
+//			if f_consign_beginrmark('flags=0,tablename='+ls_headtable+',nos=,inckno='+ls_incusno+',cusno='+ls_outcusno+',indbno='+ls_indbno+',stanos='+ls_stanos+',bulkflags='+ls_bulkflags+',;')='-1' then goto e
+		end if
+	case 'A2F1.','A2F2.','A2F3.','A2F4.' //经销不能选择正常
+		if ls_dwclassname='dw_1' and ls_winclassname='w_trunf' then 
+			ls_headtable='trunf'
+			ls_outcusno=ldw.getitemstring(l_getrow,'cusno')
+			ls_incusno=ldw.getitemstring(l_getrow,'inckno')
+			ls_indbno=string(ldw.getitemstring(l_getrow,'indbno'),'')
+			ls_stanos=ldw.getitemstring(l_getrow,'stanos')
+			ls_nos=ldw.getitemstring(l_getrow,'nos')
+			ls_bulkflags=string(ldw.object.bulkflags[l_getrow],'')
+//			if f_consign_beginrmark('flags=0,tablename='+ls_headtable+',nos=,inckno='+ls_incusno+',cusno='+ls_outcusno+',indbno='+ls_indbno+',stanos='+ls_stanos+',bulkflags='+ls_bulkflags+',;')='-1' then goto e
+		end if
+	case 'A2D2.','A2D3.' //自营不能选择寄卖或买断
+		if ls_dwclassname='dw_1' and ls_winclassname='w_trunf' then 
+			ls_headtable='trunf'
+			ls_outcusno=ldw.getitemstring(l_getrow,'cusno')
+			ls_incusno=ldw.getitemstring(l_getrow,'inckno')
+			ls_indbno=string(ldw.getitemstring(l_getrow,'indbno'),'')
+			ls_stanos=ldw.getitemstring(l_getrow,'stanos')
+			ls_nos=ldw.getitemstring(l_getrow,'nos')
+			ls_bulkflags=string(ldw.object.bulkflags[l_getrow],'')
+//			if f_consign_beginrmark('flags=0,tablename='+ls_headtable+',nos=,inckno='+ls_incusno+',cusno='+ls_outcusno+',indbno='+ls_indbno+',stanos='+ls_stanos+',bulkflags='+ls_bulkflags+',;')='-1' then goto e
+		end if
+	case 'A4361.','A4363.','A4362.','A4364.','S2B.' //特殊配货,请货单
+		if ls_dwclassname='dw_1' and ls_winclassname='w_u2pack' then 
+			ls_headtable='u2pack'
+			ls_outcusno=ldw.getitemstring(l_getrow,'ckaccno')
+			ls_incusno=ldw.getitemstring(l_getrow,'cusno')
+			ls_stanos=ldw.getitemstring(l_getrow,'stanos')
+			ls_nos=ldw.getitemstring(l_getrow,'nos')
+			ls_bulkflags=string(ldw.object.pflx[l_getrow],'')
+			ls_chflags=ldw.getitemstring(l_getrow,'chflags')
+			if ls_chflags='1' then goto m
+			
+			ls_midckno=f_maintain('sout_pconsign','midckno=')
+			ls_midckno=trim(ls_midckno)
+			
+			if ls_outcusno=ls_midckno then 
+				ls_errtext='寄卖中转仓不允许配货!' //否则会影响跨帐套转单(要生成三张单据)
+				goto e
+			end if
+			
+		end if
+	case 'A443.','A444.'
+		if ls_dwclassname='dw_1' and ls_winclassname='w_buyp' then 
+			ls_headtable='buyp'
+			ls_outcusno=string(ldw.getitemstring(l_getrow,'ckaccno'),'')
+			ls_incusno=string(ldw.getitemstring(l_getrow,'cusno'),'')
+			ls_stanos=ldw.getitemstring(l_getrow,'stanos')
+			ls_nos=ldw.getitemstring(l_getrow,'nos')
+			ls_bulkflags=string(ldw.object.pflx[l_getrow],'')
+			ls_chflags=ldw.getitemstring(l_getrow,'chflags')
+			if ls_chflags='1' then goto m
+			
+//			if f_consign_beginrmark('tablename='+ls_headtable+',nos=,ckaccno='+ls_outcusno+',cusno='+ls_incusno+',bulkflags='+ls_bulkflags+',;')='-1' then goto e
+		end if
+	case 'A463.','A464.','A473.','A474.','S22.' //店退仓
+		if ls_dwclassname='dw_1' and ls_winclassname='w_h2ort' then 
+			ls_headtable='rt'
+			ls_outcusno=string(ldw.getitemstring(l_getrow,'cusno'),'')
+			ls_incusno=string(ldw.getitemstring(l_getrow,'ckaccno'),'')
+			ls_indbno=string(ldw.getitemstring(l_getrow,'indbno'),'')
+			ls_stanos=ldw.getitemstring(l_getrow,'stanos')
+			ls_nos=ldw.getitemstring(l_getrow,'nos')
+			ls_bulkflags=string(ldw.object.bulkflags[l_getrow],'')
+			ls_chflags=ldw.getitemstring(l_getrow,'chflags')
+			if ls_chflags='1' then goto m
+//			if f_consign_beginrmark('tablename='+ls_headtable+',nos=,ckaccno='+ls_incusno+',cusno='+ls_outcusno+',indbno='+ls_indbno+',stanos='+ls_stanos+',bulkflags='+ls_bulkflags+',;')='-1' then goto e
+		end if
+end choose
+
+//bulkflags 控制
+//ls_ret=f_runsa_derek_dwbkcheck(ls_flags)
+if ls_ret='-1' then goto e
+
+goto m
+m:
+if lb_wait=false and isvalid(w_wait) then close(w_wait)
+if ls_errtext<>'' then
+	if pos(ls_errtext,'~r~n')>0 then ls_errtext+=fill(' ',max(40 - len(ls_errtext),0))
+	f_messagebox('',ls_errtext,0,0)
+end if
+return '1'
+
+goto e
+e:
+if sqlca.sqlcode=-1 then ls_errtext+=sqlca.sqlerrtext+'~r~n'
+rollback;
+if sqlca.sqlcode=-1 then ls_errtext+='Rollback:'+sqlca.sqlerrtext+'~r~n'
+if ls_errtext<>'' then
+	if pos(ls_errtext,'~r~n')>0 then ls_errtext+=fill(' ',max(40 - len(ls_errtext),0))
+	f_messagebox('保存',ls_errtext,0,0)
+end if
+if lb_wait=false and isvalid(w_wait) then close(w_wait)
+return '-1'
+end function
+

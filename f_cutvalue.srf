@@ -1,0 +1,38 @@
+$PBExportHeader$f_cutvalue.srf
+global type f_cutvalue from function_object
+end type
+
+forward prototypes
+global function string f_posvalue (ref string ls_args, string ls_field)
+global function string f_cutvalue (ref string ls_args, string ls_field, string ls_endstr)
+end prototypes
+
+global function string f_posvalue (ref string ls_args, string ls_field);//查找以分号结束的值
+return f_posvalue(ls_args,ls_field,';')
+end function
+
+global function string f_cutvalue (ref string ls_args, string ls_field, string ls_endstr);
+//查找以分号结束的值
+string ls_value
+long l_row,l_pos,l_endpos,l_startpos,l_endlen
+int li_cutout
+l_endlen=len(ls_endstr)
+l_pos=pos(ls_args,ls_field)
+if l_pos<=0 then goto m
+
+l_startpos=l_pos+len(ls_field)
+l_endpos=pos(ls_args,ls_endstr,l_startpos)
+if l_endpos=0 then 
+	ls_value=mid(ls_args,l_startpos)
+else
+	ls_value=mid(ls_args,l_startpos,l_endpos - l_startpos)
+end if
+ls_args=replace(ls_args,l_pos,l_endpos,'') //
+
+return ls_value
+
+goto m
+m:
+return ''
+end function
+

@@ -1,0 +1,32 @@
+$PBExportHeader$f_runsa_derek_wait.srf
+global type f_runsa_derek_wait from function_object
+end type
+
+forward prototypes
+global subroutine f_runsa_derek_wait (readonly integer ai_per, readonly string as_text, string as_text2)
+global subroutine f_runsa_derek_wait (readonly integer ai_per, readonly string as_text)
+end prototypes
+
+global subroutine f_runsa_derek_wait (readonly integer ai_per, readonly string as_text, string as_text2);//runsa的进度显示窗口
+if not isvalid(w_wait) then open(w_wait)
+if ai_per<>0 then f_wgz_meter(ai_per)
+w_wait.st_1.text=as_text2+''
+w_wait.st_wait.text=as_text+''
+//w_wait.st_wait2.text=as_text+'...'
+
+//if profilestring(ls_inifile,'derek','exec','')='1' then open(w_derek_sqlexec)
+
+//if not isvalid(w_derek_wait) then 
+//	open(w_derek_wait)
+//	u_dd.setwait(w_derek_wait)
+//end if
+//u_dd.wait(ai_per,as_text)
+
+end subroutine
+
+global subroutine f_runsa_derek_wait (readonly integer ai_per, readonly string as_text);//runsa的进度显示窗口
+if not isvalid(w_wait) then open(w_wait)
+if ai_per<>0 then f_wgz_meter(ai_per)
+w_wait.st_wait.text=as_text+''
+end subroutine
+

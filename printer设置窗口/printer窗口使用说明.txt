@@ -1,0 +1,20 @@
+if pos(ls_ps,ls_setprinter+'~t')=0 or ls_setprinter='' then 
+		f_messagebox('提示','打印机:'+ls_setprinter+'不在打印机列表中,请重新选择!',0,0)
+		do 
+			openwithparm(w_derek_printer,ls_setprinter)
+			ls_setprinter=message.stringparm
+			if ls_setprinter='' or isnull(ls_setprinter) then 
+				l_ret=f_messagebox('提示','没有选择打印机,要重新选择请选择"是",使用默认打印机选择"否",不打印选择"取消"!',3,1)
+				if l_ret=1 then 
+					continue	//重新选择
+				elseif l_ret=2 then
+					goto p	//使用当前打印机
+				else
+					goto e	//不打印
+				end if
+			else
+				setprofilestring(is_inifile,'boxup','printer',ls_setprinter)
+				exit
+			end if
+		loop while(1=1)
+	end if

@@ -1,0 +1,75 @@
+$PBExportHeader$f_derek_findarray.srf
+global type f_derek_findarray from function_object
+end type
+
+forward prototypes
+global function long f_derek_findarray (ref int a_array[], readonly int a_value)
+global function long f_derek_findarray (ref long a_array[], readonly long a_value)
+global function long f_derek_findarray (ref string a_array[], readonly string a_value)
+global function long f_derek_findarray (ref string a_array[], readonly string a_value, integer ai_option)
+end prototypes
+
+global function long f_derek_findarray (ref int a_array[], readonly int a_value);long l_count,i
+
+l_count=upperbound(a_array[])
+if l_count=0 then goto e
+
+for i=1 to l_count
+	if a_array[i]=a_value then exit
+	if i=l_count then goto e
+next
+
+return i
+
+e:
+return 0
+
+end function
+
+global function long f_derek_findarray (ref long a_array[], readonly long a_value);long l_count,i
+
+l_count=upperbound(a_array[])
+if l_count=0 then goto e
+
+for i=1 to l_count
+	if a_array[i]=a_value then exit
+	if i=l_count then goto e
+next
+
+return i
+
+e:
+return 0
+
+end function
+
+global function long f_derek_findarray (ref string a_array[], readonly string a_value);
+return f_derek_findarray(a_array,a_value,0)
+
+end function
+
+global function long f_derek_findarray (ref string a_array[], readonly string a_value, integer ai_option);long l_count,i
+
+l_count=upperbound(a_array[])
+if l_count=0 then goto e
+
+if ai_option=1 then //ºöÂÔ´óÐ¡Ð´
+
+	for i=1 to l_count
+		if upper(a_array[i])=upper(a_value) then exit
+		if i=l_count then goto e
+	next
+else
+	for i=1 to l_count
+		if a_array[i]=a_value then exit
+		if i=l_count then goto e
+	next
+end if
+
+return i
+
+e:
+return 0
+
+end function
+

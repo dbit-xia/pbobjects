@@ -1,0 +1,26 @@
+$PBExportHeader$f_interface_setprofile.srf
+global type f_interface_setprofile from function_object
+end type
+
+forward prototypes
+global function string f_interface_setprofile (string ls_names, string ls_section, string ls_fiedname, string ls_value)
+end prototypes
+
+global function string f_interface_setprofile (string ls_names, string ls_section, string ls_fiedname, string ls_value);//string ls_value
+
+insert into interface_profile(codes,names,section,fieldname,value)
+select '',:ls_names,:ls_section,:ls_fiedname,:ls_value
+where not exists(select 1 from interface_profile where names=:ls_names and section=:ls_section and fieldname=:ls_fiedname);
+if sqlca.sqlcode=-1 then return ''
+if sqlca.sqlnrows=0 then 
+
+	update interface_profile
+	set value=:ls_value,lutime=getdate()
+	where names=:ls_names and section=:ls_section and fieldname=:ls_fiedname and isnull(value,'')<>:ls_value;
+	if sqlca.sqlcode=-1 then return ''
+end if
+
+return ls_value
+
+end function
+

@@ -1,0 +1,57 @@
+$PBExportHeader$f_runsa_derek_dw_multi.srf
+global type f_runsa_derek_dw_multi from function_object
+end type
+
+forward prototypes
+global function integer f_runsa_derek_dw_multi (datawindow dw, long currentrow, long newrow)
+end prototypes
+
+global function integer f_runsa_derek_dw_multi (datawindow dw, long currentrow, long newrow);//返回0:单击setrow   1:shift+单击 没有setrow  0:ctrl+单击 setrow
+
+//click:
+/*
+if getrow()=row then 
+	event rowfocuschanging(row,row)
+else
+	setrow(row)
+end if
+
+*/
+
+int i=0
+if currentrow=0 or newrow=0 then return 0	//当行不存在时currentrow会为0
+//if (keydown(KeyShift!)=true or keydown(KeyControl!)=true)  then
+//	return 0
+//end if
+dw.setredraw(false)
+
+if keydown(KeyShift!) then
+	dw.selectrow(0,false)
+	if newrow>=currentrow then
+		for i=currentrow to newrow
+			dw.selectrow(i,true)
+		next
+	else
+		for i=newrow to currentrow
+			dw.selectrow(i,true)
+		next
+	end if
+	dw.setredraw(true)
+	return 1
+elseif keydown(KeyControl!) then
+	if dw.isselected(newrow)then
+		dw.selectrow(newrow,false)
+	else
+		dw.selectrow(newrow,true)
+	end if
+	dw.setredraw(true)
+	return 0
+end if
+
+dw.selectrow(0,false)
+dw.setredraw(true)
+return 0
+	
+		
+end function
+
