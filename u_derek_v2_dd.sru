@@ -5393,7 +5393,7 @@ DECLARE c1 DYNAMIC cursor FOR SQLSA;
 
 open DYNAMIC c1 USING DESCRIPTOR SQLDA; 
 
-if f_sqlcode(ltrans)=-1 then ls_errtext=ltrans.sqlerrtext+'~r~n'
+if ltrans.sqlcode=-1 then ls_errtext=ltrans.sqlerrtext+'~r~n'
 
 CLOSE c1;
 
