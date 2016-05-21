@@ -137,7 +137,7 @@ public function string valuescase (string fieldname, string fieldtype, string va
 public function string uf_sql_explain (character ls_sql[], ref string ls_newsql, ref string ls_aliasname[], ref string ls_expression[])
 public function string uf_sql_explain (character ls_sql[], string ls_param)
 public function string tovalue (readonly any la_value, readonly string ls_op)
-public function string uf_execute(string as_sql, any a_parm[],transaction ltrans)
+public function string uf_execute (string as_sql, any a_parm[], transaction ltrans)
 end prototypes
 
 public function string getquery (ref powerobject dd, string as_sql);//根据sql语句创建一个grid风格数据窗口,返回错误原因,''为成功
@@ -5374,8 +5374,9 @@ end if
 
 end function
 
-public function string uf_execute(string as_sql, any a_parm[],transaction ltrans);int i,li_parmcount
+public function string uf_execute (string as_sql, any a_parm[], transaction ltrans);int i,li_parmcount
 string ls_errtext
+long l_sqlnrows
 
 PREPARE SQLSA FROM :as_sql using ltrans; 
 DESCRIBE SQLSA INTO SQLDA; 
@@ -5396,8 +5397,9 @@ DECLARE c1 DYNAMIC cursor FOR SQLSA;
 open DYNAMIC c1 USING DESCRIPTOR SQLDA; 
 
 if ltrans.sqlcode=-1 then ls_errtext=ltrans.sqlerrtext+'~r~n'
-
+l_sqlnrows=ltrans.sqlnrows
 CLOSE c1;
+ltrans.sqlnrows=l_sqlnrows
 
 return ls_errtext
 end function
