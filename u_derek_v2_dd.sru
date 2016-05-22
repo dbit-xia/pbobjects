@@ -4696,7 +4696,7 @@ if li_insert=1 then //采用全insert的模式
 			ls_sql+='~r~nunion all '
 			//ls_sql+=','
 		end if
-		ls_sql+='~r~n '+ls_valuesyntax
+		ls_sql+='~r~n'+ls_valuesyntax
 		
 		l_rowsinserted++
 		l_subcount++
