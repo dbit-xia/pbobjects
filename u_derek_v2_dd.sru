@@ -4750,16 +4750,16 @@ for l_row=1 to l_deletedcount
 	lrowstatus=ldw_1.GetItemStatus(l_row,0,delete!)
 	if lrowstatus=New! or lrowstatus=NewModified! then continue;
 	i=1
-	ls_deletesyntax="delete from "+ls_updatetable+" "
+	ls_deletesyntax="delete from "+ls_updatetable
 	//ls_where="where "+ls_dbname[li_key[i]]+" "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_key[i]],ls_coltype[li_key[i]],delete!,true),'where')+" "
-	ls_where="where "+ls_dbname[li_key[i]]+"=? "
+	ls_where="where "+ls_dbname[li_key[i]]+"=?"
 	l_parmcount++;la_parm[l_parmcount]=ldw_1.object.data.delete.original[l_row,li_key[i]]
 	for i=2 to li_keycount
 		//ls_where+=" and "+ls_colname[li_key[i]]+" "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_key[i]],ls_coltype[li_key[i]],delete!,true),'where')+" "
-		ls_where+="and "+ls_colname[li_key[i]]+"=? " 
+		ls_where+=" and "+ls_colname[li_key[i]]+"=?" 
 		l_parmcount++;la_parm[l_parmcount]=ldw_1.object.data.delete.original[l_row,li_key[i]]
 	next
-	ls_sql+=ls_deletesyntax+ls_where+" ~r~n"
+	ls_sql+=ls_deletesyntax+' '+ls_where+"~r~n"
 	l_rowsdeleted++
 	l_subcount++
 	if l_subcount=l_batch then 
@@ -4808,12 +4808,12 @@ for li_bufferindex=1 to 2
 				ls_valuesyntax+=',?'
 				l_parmcount++;la_parm[l_parmcount]=buffer_data.current[l_row,i]
 			next
-			if l_subcount=0 then 
-				ls_sql=ls_insertsyntax 
-			else
-				ls_sql+='~r~nunion all '
-			end if
-			ls_sql+='~r~n '+ls_valuesyntax
+//			if l_subcount=0 then 
+//				ls_sql=ls_insertsyntax 
+//			else
+//				ls_sql+='~r~nunion all '
+//			end if
+			ls_sql+=ls_insertsyntax+' '+ls_valuesyntax+'~r~n'
 			
 			l_rowsinserted++
 			l_subcount++
@@ -4828,10 +4828,10 @@ for li_bufferindex=1 to 2
 				if ldw_1.getitemstatus(l_row,ls_colname[li_update[i]],ldw_buffer[li_bufferindex])=notmodified! then continue;
 				if ls_setsyntax='' then 
 					//ls_setsyntax+="set "+ls_dbname[li_update[i]]+"="+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],false),'')+" "
-					ls_setsyntax+="set "+ls_dbname[li_update[i]]+"=? "
+					ls_setsyntax+="set "+ls_dbname[li_update[i]]+"=?"
 				else
 					//ls_setsyntax+=","+ls_dbname[li_update[i]]+"="+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],false),'')+" "
-					ls_setsyntax+=","+ls_dbname[li_update[i]]+"=? "
+					ls_setsyntax+=","+ls_dbname[li_update[i]]+"=?"
 				end if
 				l_parmcount++;la_parm[l_parmcount]=buffer_data.current[l_row,li_update[i]]
 			next
@@ -4839,29 +4839,29 @@ for li_bufferindex=1 to 2
 			
 			i=1
 			//ls_where="where "+ls_colname[li_key[i]]+" "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_key[i]],ls_coltype[li_key[i]],ldw_buffer[li_bufferindex],true),'where')+" "
-			ls_where="where "+ls_colname[li_key[i]]+"=? "
+			ls_where="where "+ls_colname[li_key[i]]+"=?"
 			l_parmcount++;la_parm[l_parmcount]=buffer_data.original[l_row,li_key[i]]
 			for i=2 to li_keycount
 				//ls_where+="and "+ls_colname[li_key[i]]+" "+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_key[i]],ls_coltype[li_key[i]],ldw_buffer[li_bufferindex],true),'where')+" "
-				ls_where+="and "+ls_colname[li_key[i]]+"=? "
+				ls_where+=" and "+ls_colname[li_key[i]]+"=?"
 				l_parmcount++;la_parm[l_parmcount]=buffer_data.original[l_row,li_key[i]]
 			next
 			if ls_UpdateWhere='1' then //key+Updateable
 				for i=1 to li_updatecount
 					//ls_where+="and "+ls_dbname[li_update[i]]+""+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],true),'where')+" "
-					ls_where+="and "+ls_dbname[li_update[i]]+"=? "
+					ls_where+=" and "+ls_dbname[li_update[i]]+"=?"
 					l_parmcount++;la_parm[l_parmcount]=buffer_data.original[l_row,li_update[i]]
 				next
 			elseif ls_UpdateWhere='2' then 
 				for i=1 to li_updatecount
 					if ldw_1.getitemstatus(l_row,ls_colname[li_update[i]],ldw_buffer[li_bufferindex])=notmodified! then continue;
 					//ls_where+="and "+ls_dbname[li_update[i]]+""+tovalue(uf_getitem(ldw_1,l_row,ls_colname[li_update[i]],ls_coltype[li_update[i]],ldw_buffer[li_bufferindex],true),'where')+" " //key+modified
-					ls_where+="and "+ls_dbname[li_update[i]]+"=? " 
+					ls_where+=" and "+ls_dbname[li_update[i]]+"=?" 
 					l_parmcount++;la_parm[l_parmcount]=buffer_data.original[l_row,li_update[i]]
 				next
 			end if
 			
-			ls_sql+="update "+ls_updatetable+" "+ls_setsyntax+ls_where+" ~r~n"
+			ls_sql+="update "+ls_updatetable+" "+ls_setsyntax+' '+ls_where+'~r~n'
 			l_rowsupdated++
 			l_subcount++
 		end if
