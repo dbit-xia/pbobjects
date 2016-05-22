@@ -287,9 +287,9 @@ if l_string<>'' then
 	goto e
 end if
 
-for i=1 to l_rowcount
-	ids.setitemstatus(i,0,Primary!	,NewModified!)
-next 
+//for i=1 to l_rowcount
+//	ids.setitemstatus(i,0,Primary!	,NewModified!)
+//next 
 
 //if ids.update( )=1 then 
 //	return l_rowcount
@@ -298,11 +298,12 @@ next
 //	goto e
 //end if
 
-is_dberror=uf_update(ids,'batch=50;',l_sqlcb)
-if is_dberror='' then 
+string ls_ret
+ls_ret=uf_update(ids,'batch=50;insert=1;',l_sqlcb)
+if ls_ret='' then 
 	return l_rowcount
 else
-	is_dberror='±£¥Ê ß∞‹!'+is_dberror
+	is_dberror='±£¥Ê ß∞‹:'+ls_ret
 	goto e
 end if
 
@@ -666,14 +667,17 @@ if l_rowcount=0 then goto m	//Œﬁº«¬º
 
 ids.settransobject(l_sqlcb)
 
-for i=1 to l_rowcount
-	ids.setitemstatus(i,0,Primary!	,NewModified!)
-next 
+//for i=1 to l_rowcount
+//	ids.setitemstatus(i,0,Primary!	,NewModified!)
+//next 
 
-if ids.update()=1 then 
+string ls_ret
+ls_ret=this.uf_update(ids,'batch=50;insert=1;',l_sqlcb)
+//if ids.update()=1 then 
+if ls_ret='' then 
 	return l_rowcount
 else
-	is_dberror+='±£¥Ê ß∞‹!'
+	is_dberror+='±£¥Ê ß∞‹:'+ls_ret
 	goto e
 end if
 
@@ -1909,13 +1913,15 @@ if li_ret<>1 then
 	goto e
 end if
 
-li_ret=ids.update(false,false)
+string ls_ret
+//li_ret=ids.update(false,false)
+ls_ret=this.uf_update(ids,'batch=50;insert=1;',sqlca)
 
-if li_ret=1 then 	//update 
+if ls_ret='' then 	//update 
 	commit;
 else
 	rollback;
-	ls_msg+="±£¥Ê ß∞‹:"+is_dberror
+	ls_msg+="±£¥Ê ß∞‹:"+ls_ret
 end if
 
 e:
@@ -3478,13 +3484,15 @@ if li_ret<>1 then
 	goto e
 end if
 
-li_ret=ids.update(false,false)
+string ls_ret
+ls_ret=this.uf_update(ids,'batch=50;insert=1;',sqlca)
+//li_ret=ids.update(false,false)
 
-if li_ret=1 then 	//update 
+if ls_ret='' then 	//update 
 	commit;
 else
 	rollback;
-	ls_msg+="±£¥Ê ß∞‹:"+is_dberror
+	ls_msg+="±£¥Ê ß∞‹:"+ls_ret
 end if
 
 e:
