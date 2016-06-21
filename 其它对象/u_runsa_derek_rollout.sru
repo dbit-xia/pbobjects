@@ -16,6 +16,8 @@ public function string uf_totrunf (string ls_flags, ref string ls_ref)
 public function string uf_tomake (string ls_flags, ref string ls_ref)
 public function string uf_tort (string ls_flags, ref string ls_ref)
 public function string uf_outdate_control (string ls_flags)
+public function string iif (boolean lb_expression, string ls_truevalue, string ls_falsevalue)
+public function string uf_outdate_control (string ls_flags, ref string ls_jzdate_max)
 end prototypes
 
 public function string uf_totrunf (string ls_flags, ref string ls_ref);string ls_msgtitle,ls_errtext
@@ -742,7 +744,17 @@ ls_ref=ls_errtext //+' '+ls_outcusno+'-->'+ls_incusno
 return '-1'
 end function
 
-public function string uf_outdate_control (string ls_flags);string ls_msgtitle,ls_errtext,ls_msgbox='1'
+public function string uf_outdate_control (string ls_flags);string ls_ref
+return uf_outdate_control(ls_flags,ref ls_ref)
+end function
+
+public function string iif (boolean lb_expression, string ls_truevalue, string ls_falsevalue);
+	if lb_expression then return ls_truevalue
+	return ls_falsevalue
+
+end function
+
+public function string uf_outdate_control (string ls_flags, ref string ls_jzdate_max);string ls_msgtitle,ls_errtext,ls_msgbox='1'
 boolean lb_wait
 lb_wait=isvalid(w_wait)
 PopulateError(0, '');ls_msgtitle=error.object+'.'+error.objectevent
@@ -758,27 +770,35 @@ if sqlca.sqlcode=-1 then goto e
 ls_cwdate=string(ls_cwdate,'')
 ls_dbdate=string(ls_dbdate,'')
 
-if ls_outdate<=ls_cwdate then 
-	ls_errtext=f_wl('财务已结帐')+' '+ls_cwdate
-	goto e
-end if
+ls_jzdate_max=ls_cwdate
+if(ls_dbdate>ls_jzdate_max) then ls_jzdate_max=ls_dbdate
 
-if ls_outdate<=ls_dbdate then 
-	ls_errtext=f_wl('分销已结帐')+' '+ls_dbdate
-	goto e
-end if
+//if ls_outdate<=ls_cwdate then 
+//	ls_errtext=f_wl('财务已结帐')+' '+ls_cwdate
+//	goto e
+//end if
+//
+//if ls_outdate<=ls_dbdate then 
+//	ls_errtext=f_wl('分销已结帐')+' '+ls_dbdate
+//	goto e
+//end if
 
 long l_count
+string ls_tbtime
 //结账日检查
-select count(*) into :l_count from zg_pos_control 
+select count(*),max(convert(char(8),tbtime,112)) 
+into :l_count,:ls_tbtime
+from zg_pos_control 
 where conclass=1 and dbno=:ls_cusno 
 	and (convert(char(8),tbtime,112)>=:ls_outdate) and conflags in(1,2);
 if sqlca.sqlcode=-1 then goto e
 
-if l_count>0 then 
-	ls_errtext=f_wl('单位已结帐')+' '+ls_cusno+' '+ls_outdate
-	goto e
-end if
+if(ls_tbtime>ls_jzdate_max) then ls_jzdate_max=ls_tbtime
+
+//if l_count>0 then 
+//	ls_errtext=f_wl('单位已结帐')+' '+ls_cusno+' '+ls_outdate
+//	goto e
+//end if
 
 string ls_jzdate
 select max(t3.jzdate) into :ls_jzdate
@@ -787,9 +807,15 @@ where t1.cusno=:ls_cusno and t2.ckaccnomx=t1.mainckaccno and t3.cusno=t2.ckaccno
 
 if sqlca.sqlcode=-1 then goto e
 ls_jzdate=string(ls_jzdate,'')
+if(ls_jzdate>ls_jzdate_max) then ls_jzdate_max=ls_jzdate
 
-if ls_jzdate>=ls_outdate then 
-	ls_errtext=f_wl('套账已结账')+' '+ls_cusno+' '+ls_outdate
+//if ls_jzdate>=ls_outdate then 
+//	ls_errtext=f_wl('套账已结账')+' '+ls_cusno+' '+ls_outdate
+//	goto e
+//end if
+
+if ls_jzdate_max>=ls_outdate then 
+	ls_errtext=f_wl('指定日期已结账')+' '+ls_cusno+' '+ls_outdate
 	goto e
 end if
 
@@ -799,6 +825,7 @@ goto e
 e:
 if sqlca.sqlcode=-1 then ls_errtext+=sqlca.sqlerrtext+'~r~n'
 if lb_wait=false and isvalid(w_wait) then close(w_wait)
+if ls_errtext<>'' then ls_errtext='结账日检查:'+ls_errtext
 return ls_errtext
 end function
 

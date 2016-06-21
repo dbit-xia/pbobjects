@@ -42,7 +42,6 @@ public function string getupdatestring (powerobject dd, string as_tablename, str
 public function string getmodify (ref powerobject ad_dd, string as_sql, string as_tablenme, transaction as_sqlca)
 public function string getquery (ref powerobject dd, string as_sql, transaction at_sqlca)
 public function string setupdates (ref powerobject ad_dd, string as_tablename, string as_keys)
-public function long rowscopy (transaction l_sqlca, transaction l_sqlcb, string l_sqla, string l_sqlb, string l_tableb)
 public function string setdbname (powerobject a_dd, string as_dbnames)
 public function string xml2db (string as_xml, string as_xmltp, string as_eles, string as_tablename, string as_sql)
 public function string addxmltp (powerobject a_dd, string as_head, string as_nodes, string as_eles)
@@ -54,7 +53,6 @@ public function string getdwosyntax (readonly string as_dwsyntax, readonly strin
 public function string getresult (string as_sql)
 public function string setupdates (ref powerobject ad_dd, string as_tablename, string as_keys, string as_updates)
 public function string getmodify (ref powerobject ad_dd, string as_sql, string as_tablenme, string as_updates, transaction as_sqlca)
-public function long rowscopy (transaction l_sqlca, transaction l_sqlcb, string l_sqla, string l_tableb)
 public function string setdbupdates (powerobject a_dd, string as_tablename, string as_dbnames)
 public function integer wait (integer ai_position, string as_status)
 public function string uf_update (powerobject dd, boolean a, boolean c)
@@ -138,6 +136,9 @@ public function string uf_sql_explain (character ls_sql[], ref string ls_newsql,
 public function string uf_sql_explain (character ls_sql[], string ls_param)
 public function string tovalue (readonly any la_value, readonly string ls_op)
 public function string uf_execute (string as_sql, any a_parm[], transaction ltrans)
+public function long rowscopy (transaction l_sqlca, transaction l_sqlcb, string l_sqla, string l_sqlb, string ls_param)
+public function string iif (boolean lb_expression, string ls_truevalue, string ls_falsevalue)
+public function long rowscopy (transaction l_sqlca, transaction l_sqlcb, string l_sqla, string ls_param)
 end prototypes
 
 public function string getquery (ref powerobject dd, string as_sql);//根据sql语句创建一个grid风格数据窗口,返回错误原因,''为成功
@@ -247,71 +248,6 @@ public function string setupdates (ref powerobject ad_dd, string as_tablename, s
 string ls_string
 ls_string=getupdatestring( ad_dd, as_tablename, as_keys)
 return ad_dd.dynamic modify(ls_string)
-end function
-
-public function long rowscopy (transaction l_sqlca, transaction l_sqlcb, string l_sqla, string l_sqlb, string l_tableb);//两个事务通过rowscopy进行数据复制,没有进行提交
-//返回成功行数,-1 为失败,il_dberror记录错误信息
-
-string l_string
-long i,l_rowcount
-
-is_dberror=''	//清除错误信息
-
-l_string=getquery(ids,l_sqlb,l_sqlcb)	//使ids成为一个可以保存的数据对象
-//l_string=getmodify(ids,l_sqlb,l_tableb,l_sqlcb)	//使ids成为一个可以保存的数据对象
-
-if l_string<>'' then 
-	is_dberror+=l_string
-	goto e
-end if
-
-ids.settransobject(l_sqlca)
-
-if ids.setsqlselect(l_sqla)<>1 then 
-	is_dberror+="Setsqlselect Failed:"
-	goto e
-end if
-
-l_rowcount=ids.retrieve()	//返回查询行数 -1为失败
-
-if l_rowcount=-1 then goto e
-
-if l_rowcount=0 then goto m	//无记录
-
-ids.settransobject(l_sqlcb)
-
-l_string=setupdates(ids,l_tableb,'')
-
-if l_string<>'' then 
-	is_dberror+=l_string
-	goto e
-end if
-
-//for i=1 to l_rowcount
-//	ids.setitemstatus(i,0,Primary!	,NewModified!)
-//next 
-
-//if ids.update( )=1 then 
-//	return l_rowcount
-//else
-//	is_dberror='保存失败!'+is_dberror
-//	goto e
-//end if
-
-string ls_ret
-ls_ret=uf_update(ids,'batch=50;insert=1;',l_sqlcb)
-if ls_ret='' then 
-	return l_rowcount
-else
-	is_dberror='保存失败:'+ls_ret
-	goto e
-end if
-
-m:
-return 0
-
-e:
-return -1
 end function
 
 public function string setdbname (powerobject a_dd, string as_dbnames);//设置dbname
@@ -639,53 +575,6 @@ if l_string<>'' then goto e
 return ''
 e:
 return l_string
-end function
-
-public function long rowscopy (transaction l_sqlca, transaction l_sqlcb, string l_sqla, string l_tableb);//两个事务通过rowscopy进行数据复制,没有进行提交
-//返回成功行数,-1 为失败,il_dberror记录错误信息
-
-string l_string
-long i,l_rowcount
-
-is_dberror=''	//清除错误信息
-
-//l_string=getquery(ids,l_sqlb,l_sqlcb)	//使ids成为一个可以保存的数据对象
-l_string=getmodify(ids,l_sqla,l_tableb,l_sqlca)	//使ids成为一个可以保存的数据对象
-
-if l_string<>'' then 
-	is_dberror+=l_string
-	goto e
-end if
-
-ids.settransobject(l_sqlca)
-
-l_rowcount=ids.retrieve()	//返回查询行数 -1为失败
-
-if l_rowcount=-1 then goto e
-
-if l_rowcount=0 then goto m	//无记录
-
-ids.settransobject(l_sqlcb)
-
-//for i=1 to l_rowcount
-//	ids.setitemstatus(i,0,Primary!	,NewModified!)
-//next 
-
-string ls_ret
-ls_ret=this.uf_update(ids,'batch=50;insert=1;',l_sqlcb)
-//if ids.update()=1 then 
-if ls_ret='' then 
-	return l_rowcount
-else
-	is_dberror+='保存失败:'+ls_ret
-	goto e
-end if
-
-m:
-return 0
-
-e:
-return -1
 end function
 
 public function string setdbupdates (powerobject a_dd, string as_tablename, string as_dbnames);//设置dbname
@@ -4597,21 +4486,30 @@ string ls_errtext
 //	ls_errtext='UpdateStart:1'
 //	goto e
 //end if
-string ls_key[]={'batch','check','insert','table'} 
+string ls_key[]={'batch','check','commit','insert','table'} 
 long l_batch
 int li_check=1 /*默认检查*/
 int li_insert=0 /*将当前数据强制执行insert*/
-string ls_updatetable
+string ls_updatetable,ls_commit
 string ls_UpdateWhere //<0 - Key Columns, 1 - Key and Updateable Columns, 2 - Key and Modified Columns>
 string ls_UpdateKeyinPlace //<yes or no>
+int index
 
+
+index=0; 
+index++
 /*需要从开头按顺序传入*/
-if left(ls_param,len(ls_key[1]))=ls_key[1] then l_batch=long(uf_cutvalue(ls_param,ls_key[1]+'=',';'))
+if left(ls_param,len(ls_key[index]))=ls_key[index] then l_batch=long(uf_cutvalue(ls_param,ls_key[index]+'=',';'))
 if l_batch=0 then l_batch=1
-if left(ls_param,len(ls_key[2]))=ls_key[2] then li_check=integer(uf_cutvalue(ls_param,ls_key[2]+'=',';')) //0为不检查
+index++
+if left(ls_param,len(ls_key[index]))=ls_key[index] then li_check=integer(uf_cutvalue(ls_param,ls_key[index]+'=',';')) //0为不检查
 if l_batch>1 then li_check=0 /*批处理时,sqlnrows只返回最后一个结果,所以不能check*/
-if left(ls_param,len(ls_key[3]))=ls_key[3] then li_insert=integer(uf_cutvalue(ls_param,ls_key[3]+'=',';')) //1为insert
-if left(ls_param,len(ls_key[4]))=ls_key[4] then ls_updatetable=uf_cutvalue(ls_param,ls_key[4]+'=',';') //要更新的表名
+index++
+if left(ls_param,len(ls_key[index]))=ls_key[index] then ls_commit=uf_cutvalue(ls_param,ls_key[index]+'=',';') //1为commit
+index++
+if left(ls_param,len(ls_key[index]))=ls_key[index] then li_insert=integer(uf_cutvalue(ls_param,ls_key[index]+'=',';')) //1为insert
+index++
+if left(ls_param,len(ls_key[index]))=ls_key[index] then ls_updatetable=uf_cutvalue(ls_param,ls_key[index]+'=',';') //要更新的表名
 
 //获取表名+键值+更新方式(key,key+updatecolumn,modfied)(update,delete+insert)
 if ls_updatetable='' then ls_updatetable=ldw_1.describe("DataWindow.Table.UpdateTable")
@@ -4724,6 +4622,10 @@ if li_insert=1 then //采用全insert的模式
 					goto e
 				end if
 			end if
+			if ls_commit='1' then 
+				commit using ltrans_1;
+				if sqlca.sqlcode=-1 then goto e
+			end if
 			l_subcount=0
 			ls_sql=''
 			la_parm[]={''}
@@ -4776,6 +4678,10 @@ for l_row=1 to l_deletedcount
 				ls_errtext='Has nochanges '
 				goto e
 			end if
+		end if
+		if ls_commit='1' then 
+			commit using ltrans_1;
+			if sqlca.sqlcode=-1 then goto e
 		end if
 		l_subcount=0
 		ls_sql=''
@@ -4881,6 +4787,10 @@ for li_bufferindex=1 to 2
 					goto e
 				end if
 			end if
+			if ls_commit='1' then 
+				commit using ltrans_1;
+				if sqlca.sqlcode=-1 then goto e
+			end if
 			l_subcount=0
 			ls_sql=''
 			l_parmcount=0
@@ -4904,6 +4814,10 @@ if ls_sql<>'' then
 			ls_errtext='Has nochanges '
 			goto e
 		end if
+	end if
+	if ls_commit='1' then 
+		commit using ltrans_1;
+		if sqlca.sqlcode=-1 then goto e
 	end if
 	l_subcount=0
 	ls_sql=''
@@ -5071,16 +4985,18 @@ for i=1 to li_minhcount
 next
 ls_dwsyntax+=')'
 
-if ids_temp.create(ls_dwsyntax,ls_errtext)=-1 then 
+datastore lds_temp
+lds_temp=create datastore
+if lds_temp.create(ls_dwsyntax,ls_errtext)=-1 then 
 	ls_errtext='Create : '+ls_errtext
 	goto e
 end if
 
 //分解字符串
-l_textrowcount=ids_temp.importstring(ls_text)
+l_textrowcount=lds_temp.importstring(ls_text)
 if l_textrowcount=0 then goto e
 //messagebox('',l_textrowcount)
-//ids_temp.saveas('C:\123.txt',text!,true)
+//lds_temp.saveas('C:\123.txt',text!,true)
 //goto e
 //
 
@@ -5093,15 +5009,18 @@ for i=1 to l_textrowcount
 	l_row++
 	if l_row>dd.rowcount() then 
 		if ls_insertrow<>'1' then goto e //不自动新增行
-		if l_row<>dd.dynamic event ue_insertrow(0) then goto e
+		long l_ret
+		l_ret=dd.dynamic event ue_insertrow(0)
+		if l_row<>l_ret then goto e
 	end if
 	
 	//逐个填充
 	for m=1 to li_minhcount
 		
-		//if ids_temp.getitemstatus(i,m,primary!)=NotModified! then continue;
+		//if lds_temp.getitemstatus(i,m,primary!)=NotModified! then continue;
 		
-		ls_celltext=string(ids_temp.getitemstring(i,m),'')
+		ls_celltext=string(lds_temp.getitemstring(i,m),'')
+		if ls_celltext='' then continue;
 		
 		li_colno=li_startcolno + m - 1
 		
@@ -5139,6 +5058,7 @@ if ls_errtext<>'' then ls_errtext+='设置失败!'
 
 e:
 //dd.setredraw(true)
+if isvalid(lds_temp) then destroy lds_temp
 return ls_errtext
 //
 
@@ -5410,6 +5330,134 @@ CLOSE c1;
 ltrans.sqlnrows=l_sqlnrows
 
 return ls_errtext
+end function
+
+public function long rowscopy (transaction l_sqlca, transaction l_sqlcb, string l_sqla, string l_sqlb, string ls_param);//两个事务通过rowscopy进行数据复制,没有进行提交
+//返回成功行数,-1 为失败,il_dberror记录错误信息
+
+string l_string,ls_commit,ls_temp
+long i,l_rowcount
+int index=0
+string ls_key[]={'commit'}
+is_dberror=''	//清除错误信息
+
+index++
+if left(ls_param,len(ls_key[index]))=ls_key[index] then ls_commit=uf_cutvalue(ls_param,ls_key[index]+'=',';') //1为commit
+
+l_string=getquery(ids,l_sqlb,l_sqlcb)	//使ids成为一个可以保存的数据对象
+//l_string=getmodify(ids,l_sqlb,l_tableb,l_sqlcb)	//使ids成为一个可以保存的数据对象
+
+if l_string<>'' then 
+	is_dberror+=l_string
+	goto e
+end if
+
+ids.settransobject(l_sqlca)
+
+if ids.setsqlselect(l_sqla)<>1 then 
+	is_dberror+="Setsqlselect Failed:"
+	goto e
+end if
+
+l_rowcount=ids.retrieve()	//返回查询行数 -1为失败
+
+if l_rowcount=-1 then goto e
+
+if l_rowcount=0 then goto m	//无记录
+
+ids.settransobject(l_sqlcb)
+
+l_string=setupdates(ids,ls_param,'')
+
+if l_string<>'' then 
+	is_dberror+=l_string
+	goto e
+end if
+
+//for i=1 to l_rowcount
+//	ids.setitemstatus(i,0,Primary!	,NewModified!)
+//next 
+
+//if ids.update( )=1 then 
+//	return l_rowcount
+//else
+//	is_dberror='保存失败!'+is_dberror
+//	goto e
+//end if
+
+string ls_ret
+ls_temp='batch=50;'+iif(ls_commit='1','commit=1;','')+'insert=1;'
+ls_ret=uf_update(ids,ls_temp,l_sqlcb)
+if ls_ret='' then 
+	return l_rowcount
+else
+	is_dberror='保存失败:'+ls_ret
+	goto e
+end if
+
+m:
+return 0
+
+e:
+return -1
+end function
+
+public function string iif (boolean lb_expression, string ls_truevalue, string ls_falsevalue);
+	if lb_expression then return ls_truevalue
+	return ls_falsevalue
+
+end function
+
+public function long rowscopy (transaction l_sqlca, transaction l_sqlcb, string l_sqla, string ls_param);//两个事务通过rowscopy进行数据复制,没有进行提交
+//返回成功行数,-1 为失败,il_dberror记录错误信息
+
+string l_string,ls_commit,ls_temp
+long i,l_rowcount
+int index=0
+string ls_key[]={'commit'}
+is_dberror=''	//清除错误信息
+
+index++
+if left(ls_param,len(ls_key[index]))=ls_key[index] then ls_commit=uf_cutvalue(ls_param,ls_key[index]+'=',';') //1为commit
+
+//l_string=getquery(ids,l_sqlb,l_sqlcb)	//使ids成为一个可以保存的数据对象
+l_string=getmodify(ids,l_sqla,ls_param,l_sqlca)	//使ids成为一个可以保存的数据对象
+
+if l_string<>'' then 
+	is_dberror+=l_string
+	goto e
+end if
+
+ids.settransobject(l_sqlca)
+
+l_rowcount=ids.retrieve()	//返回查询行数 -1为失败
+
+if l_rowcount=-1 then goto e
+
+if l_rowcount=0 then goto m	//无记录
+
+ids.settransobject(l_sqlcb)
+
+//for i=1 to l_rowcount
+//	ids.setitemstatus(i,0,Primary!	,NewModified!)
+//next 
+
+string ls_ret
+ls_temp='batch=50;'+iif(ls_commit='1','commit=1;','')+'insert=1;'
+ls_ret=uf_update(ids,ls_temp,l_sqlcb)
+//if ids.update()=1 then 
+if ls_ret='' then 
+	return l_rowcount
+else
+	is_dberror+='保存失败:'+ls_ret
+	goto e
+end if
+
+m:
+return 0
+
+e:
+return -1
 end function
 
 on u_derek_v2_dd.create
