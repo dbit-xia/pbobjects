@@ -1,0 +1,73 @@
+$PBExportHeader$f_derek_getactivesheet.srf
+global type f_derek_getactivesheet from function_object
+end type
+
+forward prototypes
+global function window f_derek_getactivesheet (ref window aw_sheet, readonly string as_classname)
+global function window f_derek_getactivesheet (ref window aw_sheet, readonly string as_classname, string as_menuid)
+global function window f_derek_getactivesheet (window lw_mdi, ref window aw_sheet, readonly string as_classname, string as_menuid)
+end prototypes
+
+public function window f_derek_getactivesheet (ref window aw_sheet, readonly string as_classname);//返回第一个classname匹配的窗口
+//先返回open的窗口
+//再返回活动的sheet
+
+return f_derek_getactivesheet(aw_sheet,as_classname,'')
+
+//window lw_sheet
+//window lw_empty
+//
+////优先返回窗口类型
+//if isvalid(aw_sheet) then return aw_sheet
+//
+////然后查找当前sheet
+//lw_sheet=w_mdi_zx.GetActiveSheet ( )
+//if isvalid(lw_sheet) then
+//	if classname(lw_sheet)=as_classname then return lw_sheet
+//end if
+//
+//return lw_empty
+end function
+
+public function window f_derek_getactivesheet (ref window aw_sheet, readonly string as_classname, string as_menuid);return f_derek_getactivesheet(w_mdi_zx,aw_sheet,as_classname,as_menuid)
+end function
+
+public function window f_derek_getactivesheet (window lw_mdi, ref window aw_sheet, readonly string as_classname, string as_menuid);//返回第一个classname匹配的窗口
+//先返回open的窗口
+//再返回活动的sheet
+
+window lw_sheet
+window lw_empty
+string ls_title
+
+//优先返回窗口类型
+if isvalid(aw_sheet) then
+	if as_menuid='' then 
+		lw_sheet=aw_sheet
+		goto ok
+	end if
+	ls_title=aw_sheet.title
+	if left(ls_title,pos(ls_title,'.'))=as_menuid then 
+		lw_sheet=aw_sheet
+		goto ok
+	end if
+end if
+
+if isvalid(lw_mdi) then //保证mdi窗口必须有效
+	//然后查找当前sheet
+	lw_sheet=lw_mdi.GetActiveSheet ( )
+	if isvalid(lw_sheet) then
+		if classname(lw_sheet)=as_classname then 
+			if as_menuid='' then goto ok
+			ls_title=lw_sheet.title
+			if left(ls_title,pos(ls_title,'.'))=as_menuid then goto ok
+		end if
+	end if
+end if
+
+return lw_empty
+
+ok:
+return lw_sheet
+end function
+
