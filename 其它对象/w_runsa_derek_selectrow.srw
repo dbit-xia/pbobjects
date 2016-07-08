@@ -34,6 +34,7 @@ powerobject i_powerobjectparm
 long il_mouserow=0 //shift或mousemove到的行号
 datastore ds_source
 end variables
+
 on w_runsa_derek_selectrow.create
 int iCurrent
 call super::create
@@ -75,10 +76,12 @@ if typeof(i_powerobjectparm)=datastore! then
 	lds_temp=ds_source
 	dw_1.create(lds_temp.describe('datawindow.syntax'))
 	//lds_temp.rowscopy(1,lds_temp.rowcount(),primary!,dw_1,0,primary!) //.object.data=.object.data
-	dw_1.object.data=lds_temp.object.data
-	dw_1.event ue_rowchecked(0)
-	if dw_1.find("cp_check='0' ",1,dw_1.rowcount())=0 then 
-		cbx_selectall.checked=true //全选
+	if lds_temp.rowcount()>0 then 
+		dw_1.object.data=lds_temp.object.data
+		dw_1.event ue_rowchecked(0)
+		if dw_1.find("cp_check='0' ",1,dw_1.rowcount())=0 then 
+			cbx_selectall.checked=true //全选
+		end if
 	end if
 end if
 end event
