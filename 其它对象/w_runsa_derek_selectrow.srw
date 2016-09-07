@@ -262,6 +262,11 @@ event dw_1::rbuttondown;call super::rbuttondown;this.event ue_rowchecked(0)
 
 end event
 
+event dw_1::key;if key=keyA! and keyflags=1 then 
+	this.selectrow(0,false)
+end if
+end event
+
 type pb_ok from w_easy_parent`pb_ok within w_runsa_derek_selectrow
 integer x = 750
 integer y = 20
