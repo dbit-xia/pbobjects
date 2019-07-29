@@ -2,4 +2,5 @@
 *.zip
 *.rar
 *.zip
-
+*.xls*
+*.doc*
